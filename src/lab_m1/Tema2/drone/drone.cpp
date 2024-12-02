@@ -10,7 +10,7 @@ Drone::Drone(int resX, int resY, glm::vec3 position)
 	setIndices(generateIndices());
 	setPosition(position);
 	setAngleOx(0);
-	setAngleOy(glm::radians(45.0f));
+	setAngleOy(85.0f);
 	setAngleOz(0);
 }
 

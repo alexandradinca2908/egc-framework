@@ -5,6 +5,7 @@
 #include "lab_m1/Tema2/camera/camera.h"
 #include "lab_m1/Tema2/drone/drone.h"
 #include "lab_m1/Tema2/rotor/rotor.h"
+#include "lab_m1/Tema2/ground/ground.h"
 
 namespace m1
 {
@@ -23,6 +24,7 @@ namespace m1
 
         void CreateMesh(const char* name, const std::vector<VertexFormat>& vertices, const std::vector<unsigned int>& indices);
         void RenderMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix) override;
+        void RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix);
 
         void OnInputUpdate(float deltaTime, int mods) override;
         void OnKeyPress(int key, int mods) override;
@@ -35,6 +37,7 @@ namespace m1
 
     protected:
         Camera* camera;
+        Ground* ground;
         Drone* drone;
         Rotor* rotors[4];
 

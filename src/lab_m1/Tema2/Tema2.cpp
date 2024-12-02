@@ -7,7 +7,6 @@
 using namespace std;
 using namespace m1;
 
-
 Tema2::Tema2()
 {
 }
@@ -73,6 +72,15 @@ void Tema2::CreateMesh(const char* name, const std::vector<VertexFormat>& vertic
 
 void Tema2::Init()
 {
+    //  Create ground shader
+    {
+        Shader* shader = new Shader("GroundShader");
+        shader->AddShader(PATH_JOIN(window->props.selfDir, SOURCE_PATH::M1, "Tema2", "ground", "shaders", "VertexShader.glsl"), GL_VERTEX_SHADER);
+        shader->AddShader(PATH_JOIN(window->props.selfDir, SOURCE_PATH::M1, "Tema2", "ground", "shaders", "FragmentShader.glsl"), GL_FRAGMENT_SHADER);
+        shader->CreateAndLink();
+        shaders[shader->GetName()] = shader;
+    }
+
     //  Initialize variables
     startResolution = window->GetResolution();
     fov = RADIANS(60);
@@ -83,7 +91,15 @@ void Tema2::Init()
     //  Camera object
     camera = new Camera();
     camera->Set(glm::vec3(0, 2, 3.5f), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
+    camera->RotateThirdPerson_OY(glm::radians(220.0f));
+    camera->TranslateForward(6.0f);
+    camera->TranslateRight(-2.0f);
+    camera->TranslateUpward(3.0f);
     
+    //  Ground
+    ground = new Ground(startResolution.x, startResolution.y);
+    CreateMesh("ground", ground->getVertices(), ground->getIndices());
+
     //  Drone
     drone = new Drone(startResolution.x, startResolution.y, camera->GetTargetPosition());
     CreateMesh("drone", drone->getVertices(), drone->getIndices());
@@ -103,7 +119,7 @@ void Tema2::Init()
 void Tema2::FrameStart()
 {
     // Clears the color buffer (using the previously set color) and depth buffer
-    glClearColor(0, 0, 0, 1);
+    glClearColor(0.235f, 0.616f, 0.678f, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Sets the screen area where to draw
@@ -114,6 +130,13 @@ void Tema2::FrameStart()
 
 void Tema2::Update(float deltaTimeSeconds)
 {
+    //  GROUND
+    {
+        glm::mat4 modelMatrix = glm::mat4(1);
+        //RenderSimpleMesh(meshes["ground"], shaders["GroundShader"], modelMatrix);
+        RenderSimpleMesh(meshes["ground"], shaders["GroundShader"], modelMatrix);
+    }
+
     //  DRONE
     {
         //  Update position
@@ -122,7 +145,7 @@ void Tema2::Update(float deltaTimeSeconds)
         //  Set matrix for mesh
         glm::mat4 modelMatrix = glm::mat4(1);
         modelMatrix = glm::translate(modelMatrix, drone->getPosition());
-        modelMatrix = glm::rotate(modelMatrix, drone->getAngleOy(), glm::vec3(0, 1, 0));
+        modelMatrix = glm::rotate(modelMatrix, glm::radians(drone->getAngleOy()), glm::vec3(0, 1, 0));
 
         RenderMesh(meshes["drone"], shaders["VertexNormal"], modelMatrix);
     }
@@ -131,7 +154,7 @@ void Tema2::Update(float deltaTimeSeconds)
     {
         //  Calculate angle once; all rotors share it
         float angle = rotors[0]->getAngleOy();
-        float speed = 5.0f;
+        float speed = 500.0f;
 
         angle += speed * deltaTimeSeconds;
 
@@ -151,9 +174,9 @@ void Tema2::Update(float deltaTimeSeconds)
             glm::mat4 modelMatrix = glm::mat4(1);
             modelMatrix = glm::translate(modelMatrix, rotors[i]->getPosition());
             modelMatrix = glm::translate(modelMatrix, -offset);
-            modelMatrix = glm::rotate(modelMatrix, drone->getAngleOy(), glm::vec3(0, 1, 0));
+            modelMatrix = glm::rotate(modelMatrix, glm::radians(drone->getAngleOy()), glm::vec3(0, 1, 0));
             modelMatrix = glm::translate(modelMatrix, offset);
-            modelMatrix = glm::rotate(modelMatrix, rotors[i]->getAngleOy(), glm::vec3(0, 1, 0));
+            modelMatrix = glm::rotate(modelMatrix, glm::radians(rotors[i]->getAngleOy()), glm::vec3(0, 1, 0));
 
             RenderMesh(meshes["rotor"], shaders["VertexNormal"], modelMatrix);
         }
@@ -163,7 +186,7 @@ void Tema2::Update(float deltaTimeSeconds)
 
 void Tema2::FrameEnd()
 {
-    DrawCoordinateSystem(camera->GetViewMatrix(), projectionMatrix);
+    //DrawCoordinateSystem(camera->GetViewMatrix(), projectionMatrix);
 }
 
 
@@ -181,62 +204,113 @@ void Tema2::RenderMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix)
     mesh->Render();
 }
 
+void Tema2::RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix)
+{
+    if (!mesh || !shader || !shader->GetProgramID())
+        return;
+
+    //  Render an object using the specified shader and the specified position
+    glUseProgram(shader->program);
+
+    //  Get shader location for uniform mat4 "Model"
+    int location = glGetUniformLocation(shader->program, "Model");
+
+    //  Set shader uniform "Model" to modelMatrix
+    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(modelMatrix));
+
+    //  Get shader location for uniform mat4 "View"
+    location = glGetUniformLocation(shader->program, "View");
+
+    //  Set shader uniform "View" to viewMatrix
+    glm::mat4 viewMatrix = camera->GetViewMatrix();
+    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(viewMatrix));
+
+    //  Get shader location for uniform mat4 "Projection"
+    location = glGetUniformLocation(shader->program, "Projection");
+
+    //  Set shader uniform "Projection" to projectionMatrix
+    glm::mat4 projectionMatrix = GetSceneCamera()->GetProjectionMatrix();
+    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
+
+    //  Draw the object
+    glBindVertexArray(mesh->GetBuffers()->m_VAO);
+    glDrawElements(mesh->GetDrawMode(), static_cast<int>(mesh->indices.size()), GL_UNSIGNED_INT, 0);
+}
+
+
 void Tema2::OnInputUpdate(float deltaTime, int mods)
 {
     
-    float cameraSpeed = 4.0f;
-    float droneSpeed = 4.0f;
+    float cameraSpeedMove = 4.0f;
+    float cameraSpeedRotate = 250.0f;
 
     if (window->KeyHold(GLFW_KEY_W)) {
         //  Translate the camera forward
-        camera->TranslateForward(cameraSpeed * deltaTime);
+        camera->TranslateForward(cameraSpeedMove * deltaTime);
     }
 
     if (window->KeyHold(GLFW_KEY_A)) {
-        //  Rotate drone + camera to the left
-        camera->TranslateRight(-cameraSpeed * deltaTime);
+        //  Rotate drone to the left
+        float angle = drone->getAngleOy() + cameraSpeedRotate * deltaTime;
+        float diff = angle - drone->getAngleOy();
 
-        float angle = drone->getAngleOy() + droneSpeed * deltaTime;
-
-        if (angle > 360) {
-            angle = 360 - angle;
+        if (angle > 360.0f) {
+            angle = angle - 360.0f;
         }
 
         drone->setAngleOy(angle);
+
+        //  Rotate the camera with it
+        camera->RotateThirdPerson_OY(glm::radians(diff));
     }
 
     if (window->KeyHold(GLFW_KEY_S)) {
         //  Translate the camera backward
-        camera->TranslateForward(-cameraSpeed * deltaTime);
+        camera->TranslateForward(-cameraSpeedMove * deltaTime);
     }
 
     if (window->KeyHold(GLFW_KEY_D)) {
-        //  Rotate drone + camera to the right
-        camera->TranslateRight(cameraSpeed * deltaTime);
+        //  Rotate drone to the right
+        float angle = drone->getAngleOy() - cameraSpeedRotate * deltaTime;
+        float diff = angle - drone->getAngleOy();
 
-        float angle = drone->getAngleOy() - droneSpeed * deltaTime;
-
-        if (angle < 0) {
-            angle = 360 + angle;
+        if (angle < 0.0f) {
+            angle = 360.0f + angle;
         }
 
         drone->setAngleOy(angle);
+        
+        //  Rotate the camera with it
+        camera->RotateThirdPerson_OY(glm::radians(diff));
     }
 
-    if (window->KeyHold(GLFW_KEY_Q)) {
+    if (window->KeyHold(GLFW_KEY_LEFT_CONTROL)) {
         //  Translate the camera downward
-        camera->TranslateUpward(-cameraSpeed * deltaTime);
+        camera->TranslateUpward(-cameraSpeedMove * deltaTime);
     }
 
-    if (window->KeyHold(GLFW_KEY_E)) {
+    if (window->KeyHold(GLFW_KEY_SPACE)) {
         //  Translate the camera upward
-        camera->TranslateUpward(cameraSpeed * deltaTime);
+        camera->TranslateUpward(cameraSpeedMove * deltaTime);
+    }
+
+    if (window->KeyHold(GLFW_KEY_RIGHT)) {
+        //  Move camera to the right
+        camera->TranslateRight(cameraSpeedMove * deltaTime);
+    }
+
+    if (window->KeyHold(GLFW_KEY_LEFT)) {
+        //  Move camera to the left
+        camera->TranslateRight(-cameraSpeedMove * deltaTime);
     }
 }
 
 
 void Tema2::OnKeyPress(int key, int mods)
 {
+    if (key == GLFW_KEY_TAB) {
+        printf("%f\n", drone->getAngleOy());
+    }
 }
 
 
@@ -249,12 +323,12 @@ void Tema2::OnKeyRelease(int key, int mods)
 void Tema2::OnMouseMove(int mouseX, int mouseY, int deltaX, int deltaY)
 {
     // Add mouse move event
-    float sensivityOX = 0.001f;
-    float sensivityOY = 0.001f;
+    //float sensivityOX = 0.001f;
+    //float sensivityOY = 0.001f;
 
-    //  Rotate camera in third-person
-    camera->RotateThirdPerson_OX(-deltaY * sensivityOX);
-    camera->RotateThirdPerson_OY(-deltaX * sensivityOY);
+    ////  Rotate camera in third-person
+    //camera->RotateThirdPerson_OX(-deltaY * sensivityOX);
+    //camera->RotateThirdPerson_OY(-deltaX * sensivityOY);
 }
 
 
