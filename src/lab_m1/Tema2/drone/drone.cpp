@@ -74,66 +74,66 @@ vector<VertexFormat> Drone::generateVertices(int resX, int resY) {
 	{
 		//  Drone body
 		//  Leg 1
-		VertexFormat(glm::vec3(-0.07f * resX / ENDX, -0.07f * resY / ENDY, -0.6f * resX / ENDX), DRONEBODY, NORM),
-		VertexFormat(glm::vec3(-0.07f * resX / ENDX, 0.07f * resY / ENDY, -0.6f * resX / ENDX), DRONEBODY, NORM),
-		VertexFormat(glm::vec3(0.07f * resX / ENDX, -0.07f * resY / ENDY, -0.6f * resX / ENDX), DRONEBODY, NORM),
-		VertexFormat(glm::vec3(0.07f * resX / ENDX, 0.07f * resY / ENDY, -0.6f * resX / ENDX), DRONEBODY, NORM),
-		VertexFormat(glm::vec3(-0.07f * resX / ENDX, -0.07f * resY / ENDY, 0.6f * resX / ENDX), DRONEBODY, NORM),
-		VertexFormat(glm::vec3(-0.07f * resX / ENDX, 0.07f * resY / ENDY, 0.6f * resX / ENDX), DRONEBODY, NORM),
-		VertexFormat(glm::vec3(0.07f * resX / ENDX, -0.07f * resY / ENDY, 0.6f * resX / ENDX), DRONEBODY, NORM),
-		VertexFormat(glm::vec3(0.07f * resX / ENDX, 0.07f * resY / ENDY, 0.6f * resX / ENDX), DRONEBODY, NORM),
+		VertexFormat(glm::vec3(-0.07f, -0.07f, -0.6f), DRONEBODY, NORM),
+		VertexFormat(glm::vec3(-0.07f, 0.07f, -0.6f), DRONEBODY, NORM),
+		VertexFormat(glm::vec3(0.07f, -0.07f, -0.6f), DRONEBODY, NORM),
+		VertexFormat(glm::vec3(0.07f, 0.07f, -0.6f), DRONEBODY, NORM),
+		VertexFormat(glm::vec3(-0.07f, -0.07f, 0.6f), DRONEBODY, NORM),
+		VertexFormat(glm::vec3(-0.07f, 0.07f, 0.6f), DRONEBODY, NORM),
+		VertexFormat(glm::vec3(0.07f, -0.07f, 0.6f), DRONEBODY, NORM),
+		VertexFormat(glm::vec3(0.07f, 0.07f, 0.6f), DRONEBODY, NORM),
 
 		//  Leg 2
-		VertexFormat(glm::vec3(-0.6f * resX / ENDX, -0.07f * resY / ENDY, -0.07f * resX / ENDX), DRONEBODY, NORM),
-		VertexFormat(glm::vec3(-0.6f * resX / ENDX, 0.07f * resY / ENDY, -0.07f * resX / ENDX), DRONEBODY, NORM),
-		VertexFormat(glm::vec3(-0.6f * resX / ENDX, -0.07f * resY / ENDY, 0.07f * resX / ENDX), DRONEBODY, NORM),
-		VertexFormat(glm::vec3(-0.6f * resX / ENDX, 0.07f * resY / ENDY, 0.07f * resX / ENDX), DRONEBODY, NORM),
-		VertexFormat(glm::vec3(0.6f * resX / ENDX, -0.07f * resY / ENDY, -0.07f * resX / ENDX), DRONEBODY, NORM),
-		VertexFormat(glm::vec3(0.6f * resX / ENDX, 0.07f * resY / ENDY, -0.07f * resX / ENDX), DRONEBODY, NORM),
-		VertexFormat(glm::vec3(0.6f * resX / ENDX, -0.07f * resY / ENDY, 0.07f * resX / ENDX), DRONEBODY, NORM),
-		VertexFormat(glm::vec3(0.6f * resX / ENDX, 0.07f * resY / ENDY, 0.07f * resX / ENDX), DRONEBODY, NORM),
+		VertexFormat(glm::vec3(-0.6f, -0.07f, -0.07f), DRONEBODY, NORM),
+		VertexFormat(glm::vec3(-0.6f, 0.07f, -0.07f), DRONEBODY, NORM),
+		VertexFormat(glm::vec3(-0.6f, -0.07f, 0.07f), DRONEBODY, NORM),
+		VertexFormat(glm::vec3(-0.6f, 0.07f, 0.07f), DRONEBODY, NORM),
+		VertexFormat(glm::vec3(0.6f, -0.07f, -0.07f), DRONEBODY, NORM),
+		VertexFormat(glm::vec3(0.6f, 0.07f, -0.07f), DRONEBODY, NORM),
+		VertexFormat(glm::vec3(0.6f, -0.07f, 0.07f), DRONEBODY, NORM),
+		VertexFormat(glm::vec3(0.6f, 0.07f, 0.07f), DRONEBODY, NORM),
 
 		//  Leg 1 rotors supports
 		//  Rotor 1
-		VertexFormat(glm::vec3(-0.07f * resX / ENDX, 0.07f * resY / ENDY, -0.6f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(0.07f * resX / ENDX, 0.07f * resY / ENDY, -0.6f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(-0.07f * resX / ENDX, 0.07f * resY / ENDY, -0.45f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(0.07f * resX / ENDX, 0.07f * resY / ENDY, -0.45f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(-0.07f * resX / ENDX, 0.15f * resY / ENDY, -0.6f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(0.07f * resX / ENDX, 0.15f * resY / ENDY, -0.6f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(-0.07f * resX / ENDX, 0.15f * resY / ENDY, -0.45f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(0.07f * resX / ENDX, 0.15f * resY / ENDY, -0.45f * resX / ENDX), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(-0.07f, 0.07f, -0.6f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(0.07f, 0.07f, -0.6f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(-0.07f, 0.07f, -0.45f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(0.07f, 0.07f, -0.45f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(-0.07f, 0.15f, -0.6f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(0.07f, 0.15f, -0.6f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(-0.07f, 0.15f, -0.45f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(0.07f, 0.15f, -0.45f), DRONESUPPORT, NORM),
 
 		//  Rotor 2
-		VertexFormat(glm::vec3(-0.07f * resX / ENDX, 0.07f * resY / ENDY, 0.6f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(0.07f * resX / ENDX, 0.07f * resY / ENDY, 0.6f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(-0.07f * resX / ENDX, 0.07f * resY / ENDY, 0.45f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(0.07f * resX / ENDX, 0.07f * resY / ENDY, 0.45f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(-0.07f * resX / ENDX, 0.15f * resY / ENDY, 0.6f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(0.07f * resX / ENDX, 0.15f * resY / ENDY, 0.6f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(-0.07f * resX / ENDX, 0.15f * resY / ENDY, 0.45f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(0.07f * resX / ENDX, 0.15f * resY / ENDY, 0.45f * resX / ENDX), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(-0.07f, 0.07f, 0.6f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(0.07f, 0.07f, 0.6f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(-0.07f, 0.07f, 0.45f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(0.07f, 0.07f, 0.45f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(-0.07f, 0.15f, 0.6f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(0.07f, 0.15f, 0.6f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(-0.07f, 0.15f, 0.45f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(0.07f, 0.15f, 0.45f), DRONESUPPORT, NORM),
 
 		//  Leg 2 - rotor supports
 		//  Rotor 1
-		VertexFormat(glm::vec3(-0.6f * resX / ENDX, 0.07f * resY / ENDY, -0.07f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(-0.6f * resX / ENDX, 0.07f * resY / ENDY, 0.07f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(-0.45f * resX / ENDX, 0.07f * resY / ENDY, -0.07f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(-0.45f * resX / ENDX, 0.07f * resY / ENDY, 0.07f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(-0.6f * resX / ENDX, 0.15f * resY / ENDY, -0.07f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(-0.6f * resX / ENDX, 0.15f * resY / ENDY, 0.07f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(-0.45f * resX / ENDX, 0.15f * resY / ENDY, -0.07f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(-0.45f * resX / ENDX, 0.15f * resY / ENDY, 0.07f * resX / ENDX), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(-0.6f, 0.07f, -0.07f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(-0.6f, 0.07f, 0.07f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(-0.45f, 0.07f, -0.07f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(-0.45f, 0.07f, 0.07f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(-0.6f, 0.15f, -0.07f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(-0.6f, 0.15f, 0.07f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(-0.45f, 0.15f, -0.07f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(-0.45f, 0.15f, 0.07f), DRONESUPPORT, NORM),
 
 		//  Rotor 2
-		VertexFormat(glm::vec3(0.6f * resX / ENDX, 0.07f * resY / ENDY, -0.07f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(0.6f * resX / ENDX, 0.07f * resY / ENDY, 0.07f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(0.45f * resX / ENDX, 0.07f * resY / ENDY, -0.07f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(0.45f * resX / ENDX, 0.07f * resY / ENDY, 0.07f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(0.6f * resX / ENDX, 0.15f * resY / ENDY, -0.07f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(0.6f * resX / ENDX, 0.15f * resY / ENDY, 0.07f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(0.45f * resX / ENDX, 0.15f * resY / ENDY, -0.07f * resX / ENDX), DRONESUPPORT, NORM),
-		VertexFormat(glm::vec3(0.45f * resX / ENDX, 0.15f * resY / ENDY, 0.07f * resX / ENDX), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(0.6f, 0.07f, -0.07f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(0.6f, 0.07f, 0.07f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(0.45f, 0.07f, -0.07f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(0.45f, 0.07f, 0.07f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(0.6f, 0.15f, -0.07f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(0.6f, 0.15f, 0.07f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(0.45f, 0.15f, -0.07f), DRONESUPPORT, NORM),
+		VertexFormat(glm::vec3(0.45f, 0.15f, 0.07f), DRONESUPPORT, NORM),
 	};
 
 	return vertices;
@@ -224,18 +224,18 @@ vector<unsigned int> Drone::generateIndices() {
 }
 
 glm::vec3 Drone::calculateRotorOffset(int resX, int resY, int index) {
-	float rotorOffset = 0.02f * resY / ENDY;
+	float rotorOffset = 0.02f;
 
 	if (index == 0) {
-		return glm::vec3(0, 0.15f * resY / ENDY + rotorOffset, -0.525f * resX / ENDX);
+		return glm::vec3(0, 0.15f + rotorOffset, -0.525f);
 	}
 	else if (index == 1) {
-		return glm::vec3(0, 0.15f * resY / ENDY + rotorOffset, 0.525f * resX / ENDX);
+		return glm::vec3(0, 0.15f + rotorOffset, 0.525f);
 	}
 	else if (index == 2) {
-		return glm::vec3(-0.525f * resX / ENDX, 0.15f * resY / ENDY + rotorOffset, 0);
+		return glm::vec3(-0.525f, 0.15f + rotorOffset, 0);
 	}
 	else {
-		return glm::vec3(0.525f * resX / ENDX, 0.15f * resY / ENDY + rotorOffset, 0);
+		return glm::vec3(0.525f, 0.15f + rotorOffset, 0);
 	}
 }

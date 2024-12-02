@@ -35,12 +35,6 @@ namespace m1
 		vector<unsigned int> generateIndices();
 
 	protected:
-		//  Interval for x and y within drone limits
-		const int STARTX = 0;
-		const int ENDX = 1200;
-		const int STARTY = 0;
-		const int ENDY = 720;
-
 		//  Drone colour
 		const glm::vec3 DRONEBODY = glm::vec3(0.7f, 0.7f, 0.7f);
 		const glm::vec3 DRONESUPPORT = glm::vec3(0.4f, 0.4f, 0.4f);

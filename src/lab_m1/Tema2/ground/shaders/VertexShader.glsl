@@ -41,7 +41,7 @@ float noise (in vec2 st) {
     //  Smooth Interpolation
 
     //  Cubic Hermine Curve.  Same as SmoothStep()
-    vec2 u = f*f*(3.0-2.0*f);
+    vec2 u = f * f * (3.0 - 2.0 * f);
 
     //  Mix 4 coorners percentages
     return mix(a, b, u.x) +
@@ -63,7 +63,7 @@ void main()
 
     //  Add noise to colour
     noise = noise * 0.5 + 0.5;
-    frag_color = mix(vec3(0.2, 0.6, 0.3), vec3(0.8, 0.9, 0.5), noise);
+    frag_color = mix(vec3(0.1, 0.5, 0.2), vec3(0.5, 0.75, 0.4), noise);
 
     //  Compute gl_Position
     gl_Position = Projection * View * Model * vec4(new_position, 1.0);

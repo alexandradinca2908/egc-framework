@@ -6,6 +6,7 @@
 #include "lab_m1/Tema2/drone/drone.h"
 #include "lab_m1/Tema2/rotor/rotor.h"
 #include "lab_m1/Tema2/ground/ground.h"
+#include"lab_m1/Tema2/tree/tree.h"
 
 namespace m1
 {
@@ -36,10 +37,15 @@ namespace m1
         void OnWindowResize(int width, int height) override;
 
     protected:
+        static const int TREES = 25;
+        static const int GRIDLENGTH = 50;
+        static const int GRIDMARGINS = 3;
+
         Camera* camera;
         Ground* ground;
         Drone* drone;
         Rotor* rotors[4];
+        Tree* trees[TREES];
 
         glm::ivec2 startResolution;
         glm::mat4 projectionMatrix;
@@ -48,5 +54,7 @@ namespace m1
         float aspectRatio;
         float nearPlane;
         float farPlane;
+        bool usedX[GRIDLENGTH];
+        bool usedZ[GRIDLENGTH];
     };
 }   // namespace m1

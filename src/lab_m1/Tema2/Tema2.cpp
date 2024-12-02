@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <time.h>
 
 using namespace std;
 using namespace m1;
@@ -88,6 +89,14 @@ void Tema2::Init()
     nearPlane = 0.01f;
     farPlane = 200.0f;
 
+    for (int i = 1; i < GRIDLENGTH; i++) {
+        usedX[i] = false;
+        usedZ[i] = false;
+    }
+
+    //  Projection matrix
+    projectionMatrix = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
+
     //  Camera object
     camera = new Camera();
     camera->Set(glm::vec3(0, 2, 3.5f), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
@@ -111,9 +120,32 @@ void Tema2::Init()
     }
     CreateMesh("rotor", rotors[0]->getVertices(), rotors[0]->getIndices());
 
-    //  Projection matrix
-    projectionMatrix = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
+    //  Trees
+    srand(time(NULL));
+    for (int i = 0; i < TREES; i++) {
+        //  Generate a position
+        bool ok = false;
+        glm::vec3 position;
 
+        while (!ok) {
+            int x = rand() % GRIDLENGTH + GRIDMARGINS;
+            int z = rand() % GRIDLENGTH + GRIDMARGINS;
+
+            if (x < GRIDLENGTH - GRIDMARGINS && z < GRIDLENGTH - GRIDMARGINS 
+                && (!usedX[x] || !usedZ[z])) {
+
+                float y = ground->calculateHeight((float) x, (float) z);
+                position = glm::vec3(x, y, z);
+                
+                ok = true;
+                usedX[x] = true;
+                usedZ[z] = true;
+            }
+        }
+
+        trees[i] = new Tree(startResolution.x, startResolution.y, position);
+        CreateMesh("tree", trees[i]->getVertices(), trees[i]->getIndices());
+    }
 }
 
 void Tema2::FrameStart()
@@ -130,10 +162,20 @@ void Tema2::FrameStart()
 
 void Tema2::Update(float deltaTimeSeconds)
 {
+    //  TREES
+    {
+        for (int i = 0; i < TREES; i++) {
+            glm::mat4 modelMatrix = glm::mat4(1);
+            modelMatrix = glm::translate(modelMatrix, trees[i]->getPosition());
+
+            RenderMesh(meshes["tree"], shaders["VertexNormal"], modelMatrix);
+        }
+       
+    }
+
     //  GROUND
     {
         glm::mat4 modelMatrix = glm::mat4(1);
-        //RenderSimpleMesh(meshes["ground"], shaders["GroundShader"], modelMatrix);
         RenderSimpleMesh(meshes["ground"], shaders["GroundShader"], modelMatrix);
     }
 
@@ -186,7 +228,7 @@ void Tema2::Update(float deltaTimeSeconds)
 
 void Tema2::FrameEnd()
 {
-    //DrawCoordinateSystem(camera->GetViewMatrix(), projectionMatrix);
+    DrawCoordinateSystem(camera->GetViewMatrix(), projectionMatrix);
 }
 
 
@@ -246,7 +288,7 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
 
     if (window->KeyHold(GLFW_KEY_W)) {
         //  Translate the camera forward
-        camera->TranslateForward(cameraSpeedMove * deltaTime);
+        camera->MoveForward(cameraSpeedMove * deltaTime);
     }
 
     if (window->KeyHold(GLFW_KEY_A)) {
@@ -266,7 +308,7 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
 
     if (window->KeyHold(GLFW_KEY_S)) {
         //  Translate the camera backward
-        camera->TranslateForward(-cameraSpeedMove * deltaTime);
+        camera->MoveForward(-cameraSpeedMove * deltaTime);
     }
 
     if (window->KeyHold(GLFW_KEY_D)) {

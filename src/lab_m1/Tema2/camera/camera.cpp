@@ -44,7 +44,7 @@ void Camera::MoveForward(float distance)
     position += dir * distance;
 }
 
-// TODO(student): Translate the camera using the `forward` vector.
+// Translate the camera using the `forward` vector.
 // Changes distance from the ground depending on camera orientation
 void Camera::TranslateForward(float distance)
 {
