@@ -296,26 +296,39 @@ void Tema2::RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelM
 void Tema2::OnInputUpdate(float deltaTime, int mods)
 {
     
-    float cameraSpeedMove = 1.0f;
+    float cameraSpeedMove = 0.5f;
     float cameraSpeedRotate = 250.0f;
 
     //
     if (window->KeyHold(GLFW_KEY_W)) {
         //  Translate the camera upward
         //  Take into account drone angles
-        float upward = (15.0 - abs(drone->getAngleOx())) * cameraSpeedMove * deltaTime;
+        float upward = (15.0f - abs(drone->getAngleOx())) * (15.0f - abs(drone->getAngleOz()))
+            * cameraSpeedMove * deltaTime;
+        upward /= 10.0f;
         camera->TranslateUpward(upward);
 
         float forward = drone->getAngleOx() * cameraSpeedMove * deltaTime;
         camera->MoveForward(forward);
 
         float right = drone->getAngleOz() * cameraSpeedMove * deltaTime;
-        camera->MoveForward(right);
+        camera->TranslateRight(right);
     }
 
     if (window->KeyHold(GLFW_KEY_S)) {
-        //  Translate the camera backward
-        camera->MoveForward(-cameraSpeedMove * deltaTime);
+        //  Translate the camera downward
+        //  Translate the camera upward
+        //  Take into account drone angles
+        float upward = (15.0f - abs(drone->getAngleOx())) * (15.0f - abs(drone->getAngleOz()))
+            * cameraSpeedMove * deltaTime;
+        upward /= 10.0f;
+        camera->TranslateUpward(-upward);
+
+        float forward = drone->getAngleOx() * cameraSpeedMove * deltaTime;
+        camera->MoveForward(-forward);
+
+        float right = drone->getAngleOz() * cameraSpeedMove * deltaTime;
+        camera->TranslateRight(-right);
     }
 
     if (window->KeyHold(GLFW_KEY_A)) {
