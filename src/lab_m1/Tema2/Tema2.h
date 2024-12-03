@@ -56,5 +56,9 @@ namespace m1
         float farPlane;
         bool usedX[GRIDLENGTH];
         bool usedZ[GRIDLENGTH];
+
+        float cameraSpeedMove;
+        bool isSlidingForward;
+        bool isSlidingBackward;
     };
 }   // namespace m1

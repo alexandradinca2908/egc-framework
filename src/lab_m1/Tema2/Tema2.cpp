@@ -90,6 +90,10 @@ void Tema2::Init()
     nearPlane = 0.01f;
     farPlane = 200.0f;
 
+    cameraSpeedMove = 0.0f;
+    isSlidingForward = false;
+    isSlidingBackward = false;
+
     for (int i = 1; i < GRIDLENGTH; i++) {
         usedX[i] = false;
         usedZ[i] = false;
@@ -187,6 +191,28 @@ void Tema2::Update(float deltaTimeSeconds)
 
     //  DRONE
     {
+        //  Deaccelerate
+        if (cameraSpeedMove > 0.0f && (isSlidingForward || isSlidingBackward)) {
+            cameraSpeedMove -= deltaTimeSeconds / 1.5f;
+
+            float upward = (15.0f - abs(drone->getAngleOx())) * (15.0f - abs(drone->getAngleOz()))
+                * cameraSpeedMove * deltaTimeSeconds;
+            upward /= 10.0f;
+            
+            float forward = drone->getAngleOx() * cameraSpeedMove * deltaTimeSeconds;
+            float right = drone->getAngleOz() * cameraSpeedMove * deltaTimeSeconds;
+
+            if (isSlidingBackward) {
+                upward *= -1;
+                forward *= -1;
+                right *= -1;
+            }
+
+            camera->TranslateUpward(upward);           
+            camera->MoveForward(forward);
+            camera->TranslateRight(right);
+        }
+        
         //  Update position
         drone->setPosition(camera->GetTargetPosition());
 
@@ -296,11 +322,23 @@ void Tema2::RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelM
 void Tema2::OnInputUpdate(float deltaTime, int mods)
 {
     
-    float cameraSpeedMove = 0.5f;
     float cameraSpeedRotate = 250.0f;
 
-    //
+    //  THRUST
     if (window->KeyHold(GLFW_KEY_W)) {
+        //  Lose momentum
+        if (isSlidingBackward) {
+            cameraSpeedMove = 0.0f;
+        }
+        isSlidingForward = false;
+        isSlidingBackward = false;
+
+        //  Accelerate
+        cameraSpeedMove += deltaTime;
+        if (cameraSpeedMove > 0.8f) {
+            cameraSpeedMove = 0.8f;
+        }
+
         //  Translate the camera upward
         //  Take into account drone angles
         float upward = (15.0f - abs(drone->getAngleOx())) * (15.0f - abs(drone->getAngleOz()))
@@ -316,6 +354,18 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
     }
 
     if (window->KeyHold(GLFW_KEY_S)) {
+        if (isSlidingForward) {
+            cameraSpeedMove = 0.0f;
+        }
+        isSlidingForward = false;
+        isSlidingBackward = false;
+
+        //  Accelerate
+        cameraSpeedMove += deltaTime;
+        if (cameraSpeedMove > 0.8f) {
+            cameraSpeedMove = 0.8f;
+        }
+
         //  Translate the camera downward
         //  Translate the camera upward
         //  Take into account drone angles
@@ -331,6 +381,7 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
         camera->TranslateRight(-right);
     }
 
+    //  YAW
     if (window->KeyHold(GLFW_KEY_A)) {
         //  Rotate drone to the left
         float angle = drone->getAngleOy() + cameraSpeedRotate * deltaTime;
@@ -418,6 +469,13 @@ void Tema2::OnKeyPress(int key, int mods)
 void Tema2::OnKeyRelease(int key, int mods)
 {
     // Add key release event
+    if (key == GLFW_KEY_W) {
+        isSlidingForward = true;
+    }
+
+    if (key == GLFW_KEY_S) {
+        isSlidingBackward = true;
+    }
 }
 
 
