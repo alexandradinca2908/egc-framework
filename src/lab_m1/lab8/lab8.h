@@ -37,6 +37,14 @@ namespace m1
         float materialKs;
 
         // TODO(student): If you need any other class variables, define them here.
+        int isSpot;
 
+        glm::vec3 lightPosition2;
+        glm::vec3 lightDirection2;
+        int isSpot2;
+
+        glm::vec3 lightPositions[2];
+        glm::vec3 lightDirections[2];
+        int isSpots[2];
     };
 }   // namespace m1

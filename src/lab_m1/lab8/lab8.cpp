@@ -60,6 +60,17 @@ void Lab8::Init()
         materialShininess = 30;
         materialKd = 0.5;
         materialKs = 0.5;
+        isSpot = 0;
+
+        lightPosition2 = glm::vec3(2, 1, -1);
+        lightDirection2 = glm::vec3(-1, -1, 0);
+        isSpot2 = 0;
+
+        lightPositions[0] = lightPosition;
+        lightPositions[1] = lightPosition2;
+
+        lightDirections[0] = lightDirection;
+        lightDirections[1] = lightDirection2;
     }
 }
 
@@ -163,6 +174,8 @@ void Lab8::RenderSimpleMesh(Mesh *mesh, Shader *shader, const glm::mat4 & modelM
     glUniform3f(object_color, color.r, color.g, color.b);
 
     // TODO(student): Set any other shader uniforms that you need
+    int is_spot = glGetUniformLocation(shader->program, "is_spot");
+    glUniform1i(is_spot, isSpot);
 
     // Bind model matrix
     GLint loc_model_matrix = glGetUniformLocation(shader->program, "Model");
@@ -220,6 +233,14 @@ void Lab8::OnKeyPress(int key, int mods)
     // Add key press event
 
     // TODO(student): Set keys that you might need
+    if (key == GLFW_KEY_F) {
+        if (isSpot == 0) {
+            isSpot = 1;
+        }
+        else {
+            isSpot = 0;
+        }
+    }
 
 }
 

@@ -7,6 +7,7 @@
 
 using namespace std;
 using namespace m1;
+using namespace transform3D;
 
 Tema2::Tema2()
 {
@@ -125,14 +126,16 @@ void Tema2::Init()
     for (int i = 0; i < TREES; i++) {
         //  Generate a position
         bool ok = false;
-        glm::vec3 position;
+        glm::vec3 position = glm::vec3(0, 0, 0);
 
         while (!ok) {
             int x = rand() % GRIDLENGTH + GRIDMARGINS;
             int z = rand() % GRIDLENGTH + GRIDMARGINS;
 
-            if (x < GRIDLENGTH - GRIDMARGINS && z < GRIDLENGTH - GRIDMARGINS 
+            if ((x < GRIDLENGTH - GRIDMARGINS) && (z < GRIDLENGTH - GRIDMARGINS)
                 && (!usedX[x] || !usedZ[z])) {
+
+                printf("%d %d\n", x, z);
 
                 float y = ground->calculateHeight((float) x, (float) z);
                 position = glm::vec3(x, y, z);
@@ -144,6 +147,8 @@ void Tema2::Init()
         }
 
         trees[i] = new Tree(startResolution.x, startResolution.y, position);
+        trees[i]->setScale(float(rand() % 5) / 10 + 1.0f);
+
         CreateMesh("tree", trees[i]->getVertices(), trees[i]->getIndices());
     }
 }
@@ -166,11 +171,12 @@ void Tema2::Update(float deltaTimeSeconds)
     {
         for (int i = 0; i < TREES; i++) {
             glm::mat4 modelMatrix = glm::mat4(1);
-            modelMatrix = glm::translate(modelMatrix, trees[i]->getPosition());
+            modelMatrix *= Translate(trees[i]->getPosition().x, trees[i]->getPosition().y,
+                trees[i]->getPosition().z);
+            modelMatrix *= Scale(trees[i]->getScale(), trees[i]->getScale(), trees[i]->getScale());
 
             RenderMesh(meshes["tree"], shaders["VertexNormal"], modelMatrix);
-        }
-       
+        }  
     }
 
     //  GROUND
@@ -186,9 +192,12 @@ void Tema2::Update(float deltaTimeSeconds)
 
         //  Set matrix for mesh
         glm::mat4 modelMatrix = glm::mat4(1);
-        modelMatrix = glm::translate(modelMatrix, drone->getPosition());
-        modelMatrix = glm::rotate(modelMatrix, glm::radians(drone->getAngleOy()), glm::vec3(0, 1, 0));
-
+        modelMatrix *= Translate(drone->getPosition().x, drone->getPosition().y, drone->getPosition().z);
+        modelMatrix *= RotateOY(glm::radians(-45.0f));
+        modelMatrix *= RotateOY(glm::radians(drone->getAngleOy()));
+        modelMatrix *= RotateOZ(glm::radians(drone->getAngleOz()));
+        modelMatrix *= RotateOX(glm::radians(drone->getAngleOx()));
+        modelMatrix *= RotateOY(glm::radians(45.0f));
         RenderMesh(meshes["drone"], shaders["VertexNormal"], modelMatrix);
     }
 
@@ -214,11 +223,15 @@ void Tema2::Update(float deltaTimeSeconds)
 
             //  Set matrix for mesh
             glm::mat4 modelMatrix = glm::mat4(1);
-            modelMatrix = glm::translate(modelMatrix, rotors[i]->getPosition());
-            modelMatrix = glm::translate(modelMatrix, -offset);
-            modelMatrix = glm::rotate(modelMatrix, glm::radians(drone->getAngleOy()), glm::vec3(0, 1, 0));
-            modelMatrix = glm::translate(modelMatrix, offset);
-            modelMatrix = glm::rotate(modelMatrix, glm::radians(rotors[i]->getAngleOy()), glm::vec3(0, 1, 0));
+            modelMatrix *= Translate(rotors[i]->getPosition().x, rotors[i]->getPosition().y, rotors[i]->getPosition().z);
+            modelMatrix *= Translate(-offset.x, -offset.y, -offset.z);
+            modelMatrix *= RotateOY(glm::radians(-45.0f));
+            modelMatrix *= RotateOY(glm::radians(drone->getAngleOy()));
+            modelMatrix *= RotateOZ(glm::radians(drone->getAngleOz()));
+            modelMatrix *= RotateOX(glm::radians(drone->getAngleOx()));
+            modelMatrix *= RotateOY(glm::radians(45.0f));
+            modelMatrix *= Translate(offset.x, offset.y, offset.z);
+            modelMatrix *= RotateOY(glm::radians(rotors[i]->getAngleOy()));
 
             RenderMesh(meshes["rotor"], shaders["VertexNormal"], modelMatrix);
         }
@@ -283,12 +296,26 @@ void Tema2::RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelM
 void Tema2::OnInputUpdate(float deltaTime, int mods)
 {
     
-    float cameraSpeedMove = 4.0f;
+    float cameraSpeedMove = 1.0f;
     float cameraSpeedRotate = 250.0f;
 
+    //
     if (window->KeyHold(GLFW_KEY_W)) {
-        //  Translate the camera forward
-        camera->MoveForward(cameraSpeedMove * deltaTime);
+        //  Translate the camera upward
+        //  Take into account drone angles
+        float upward = (15.0 - abs(drone->getAngleOx())) * cameraSpeedMove * deltaTime;
+        camera->TranslateUpward(upward);
+
+        float forward = drone->getAngleOx() * cameraSpeedMove * deltaTime;
+        camera->MoveForward(forward);
+
+        float right = drone->getAngleOz() * cameraSpeedMove * deltaTime;
+        camera->MoveForward(right);
+    }
+
+    if (window->KeyHold(GLFW_KEY_S)) {
+        //  Translate the camera backward
+        camera->MoveForward(-cameraSpeedMove * deltaTime);
     }
 
     if (window->KeyHold(GLFW_KEY_A)) {
@@ -306,11 +333,6 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
         camera->RotateThirdPerson_OY(glm::radians(diff));
     }
 
-    if (window->KeyHold(GLFW_KEY_S)) {
-        //  Translate the camera backward
-        camera->MoveForward(-cameraSpeedMove * deltaTime);
-    }
-
     if (window->KeyHold(GLFW_KEY_D)) {
         //  Rotate drone to the right
         float angle = drone->getAngleOy() - cameraSpeedRotate * deltaTime;
@@ -326,24 +348,46 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
         camera->RotateThirdPerson_OY(glm::radians(diff));
     }
 
-    if (window->KeyHold(GLFW_KEY_LEFT_CONTROL)) {
-        //  Translate the camera downward
-        camera->TranslateUpward(-cameraSpeedMove * deltaTime);
+    //  PITCH
+    if (window->KeyHold(GLFW_KEY_UP)) {
+        float angle = drone->getAngleOx() + cameraSpeedRotate * deltaTime;
+
+        if (angle > 15.0f) {
+            angle = 15.0f;
+        }
+
+        drone->setAngleOx(angle);
     }
 
-    if (window->KeyHold(GLFW_KEY_SPACE)) {
-        //  Translate the camera upward
-        camera->TranslateUpward(cameraSpeedMove * deltaTime);
+    if (window->KeyHold(GLFW_KEY_DOWN)) {
+        float angle = drone->getAngleOx() - cameraSpeedRotate * deltaTime;
+
+        if (angle < -15.0f) {
+            angle = -15.0f;
+        }
+
+        drone->setAngleOx(angle);
     }
 
+    //  ROLL
     if (window->KeyHold(GLFW_KEY_RIGHT)) {
-        //  Move camera to the right
-        camera->TranslateRight(cameraSpeedMove * deltaTime);
+        float angle = drone->getAngleOz() + cameraSpeedRotate * deltaTime;
+
+        if (angle > 15.0f) {
+            angle = 15.0f;
+        }
+
+        drone->setAngleOz(angle);
     }
 
     if (window->KeyHold(GLFW_KEY_LEFT)) {
-        //  Move camera to the left
-        camera->TranslateRight(-cameraSpeedMove * deltaTime);
+        float angle = drone->getAngleOz() - cameraSpeedRotate * deltaTime;
+
+        if (angle < -15.0f) {
+            angle = -15.0f;
+        }
+
+        drone->setAngleOz(angle);
     }
 }
 
@@ -351,7 +395,9 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
 void Tema2::OnKeyPress(int key, int mods)
 {
     if (key == GLFW_KEY_TAB) {
-        printf("%f\n", drone->getAngleOy());
+        printf("Drone: %f %f %f\n", floor(drone->getPosition().x), drone->getPosition().y, floor(drone->getPosition().z));
+        float y = ground->calculateHeight(floor(drone->getPosition().x), floor(drone->getPosition().z));
+        printf("Terrain height: %f\n", y);
     }
 }
 
