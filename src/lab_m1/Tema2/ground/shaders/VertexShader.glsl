@@ -21,7 +21,7 @@ out vec3 frag_color;
 
 //  2D Random
 float random (in vec2 st) {
-    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 129.5);
 }
 
 //  2D Noise
@@ -55,7 +55,7 @@ void main()
 
     //  Add noise to position
     vec2 pos = vec2(v_position.x, v_position.z);
-    float noise = noise(pos * 0.1) * 3;
+    float noise = noise(pos * 0.1) * 4;
     vec3 new_position = vec3(v_position.x, noise, v_position.z);
 
     //  Add noise to colour

@@ -37,8 +37,8 @@ namespace m1
         void OnWindowResize(int width, int height) override;
 
     protected:
-        static const int TREES = 25;
-        static const int GRIDLENGTH = 49;
+        static const int TREES = 45;
+        static const int GRIDLENGTH = 79;
         static const int GRIDMARGINS = 3;
 
         Camera* camera;
@@ -60,5 +60,8 @@ namespace m1
         float cameraSpeedMove;
         bool isSlidingForward;
         bool isSlidingBackward;
+        bool collision;
+        bool wHold;
+        bool sHold;
     };
 }   // namespace m1

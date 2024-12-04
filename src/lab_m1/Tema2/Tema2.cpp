@@ -93,11 +93,17 @@ void Tema2::Init()
     cameraSpeedMove = 0.0f;
     isSlidingForward = false;
     isSlidingBackward = false;
+    collision = false;
+    wHold = false;
+    sHold = false;
 
     for (int i = 1; i < GRIDLENGTH; i++) {
         usedX[i] = false;
         usedZ[i] = false;
     }
+    //  Drone spawn point is busy
+    usedX[5] = true;
+    usedZ[5] = true;
 
     //  Projection matrix
     projectionMatrix = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
@@ -191,7 +197,25 @@ void Tema2::Update(float deltaTimeSeconds)
 
     //  DRONE
     {
-        //  Deaccelerate
+        //  Check for collisions
+        if (!collision) {
+            float err = 0.1f;
+            
+
+            for (float alpha = 0; alpha < 360.0f; alpha += 45.0f) {
+                float x = drone->getPosition().x + drone->HITBOX * cos(alpha);
+                float z = drone->getPosition().z + drone->HITBOX * sin(alpha);
+
+                float height = ground->calculateHeight(x, z);
+
+                if (height >= drone->getPosition().y - err) {
+                    collision = true;
+                    break;
+                }
+            }
+        }
+
+        //  Momentum animation
         if (cameraSpeedMove > 0.0f && (isSlidingForward || isSlidingBackward)) {
             cameraSpeedMove -= deltaTimeSeconds / 1.5f;
 
@@ -202,7 +226,7 @@ void Tema2::Update(float deltaTimeSeconds)
             float forward = drone->getAngleOx() * cameraSpeedMove * deltaTimeSeconds;
             float right = drone->getAngleOz() * cameraSpeedMove * deltaTimeSeconds;
 
-            if (isSlidingBackward) {
+            if ((isSlidingBackward && !collision) || (isSlidingForward && collision)) {
                 upward *= -1;
                 forward *= -1;
                 right *= -1;
@@ -211,6 +235,10 @@ void Tema2::Update(float deltaTimeSeconds)
             camera->TranslateUpward(upward);           
             camera->MoveForward(forward);
             camera->TranslateRight(right);
+        }
+
+        if (cameraSpeedMove <= 0.0f) {
+            collision = false;
         }
         
         //  Update position
@@ -325,7 +353,12 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
     float cameraSpeedRotate = 250.0f;
 
     //  THRUST
-    if (window->KeyHold(GLFW_KEY_W)) {
+    if (window->KeyHold(GLFW_KEY_W) && !collision) {
+        //  Mark key as pressed
+        if (!wHold) {
+            wHold = true;
+        }
+
         //  Lose momentum
         if (isSlidingBackward) {
             cameraSpeedMove = 0.0f;
@@ -352,8 +385,18 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
         float right = drone->getAngleOz() * cameraSpeedMove * deltaTime;
         camera->TranslateRight(right);
     }
+    else if (wHold) {
+        isSlidingForward = true;
+        wHold = false;
+    }
 
-    if (window->KeyHold(GLFW_KEY_S)) {
+    if (window->KeyHold(GLFW_KEY_S) && !collision) {
+        //  Mark key as pressed
+        if (!sHold) {
+            sHold = true;
+        }
+        
+        //  Lose momentum
         if (isSlidingForward) {
             cameraSpeedMove = 0.0f;
         }
@@ -379,6 +422,10 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
 
         float right = drone->getAngleOz() * cameraSpeedMove * deltaTime;
         camera->TranslateRight(-right);
+    }
+    else if (sHold) {
+        isSlidingBackward = true;
+        sHold = false;
     }
 
     //  YAW
@@ -468,14 +515,6 @@ void Tema2::OnKeyPress(int key, int mods)
 
 void Tema2::OnKeyRelease(int key, int mods)
 {
-    // Add key release event
-    if (key == GLFW_KEY_W) {
-        isSlidingForward = true;
-    }
-
-    if (key == GLFW_KEY_S) {
-        isSlidingBackward = true;
-    }
 }
 
 

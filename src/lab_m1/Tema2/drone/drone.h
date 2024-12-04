@@ -29,12 +29,16 @@ namespace m1
 		void setAngleOz(float angle);
 		glm::vec3 calculateRotorOffset(int resX, int resY, int index);
 
+		//  Drone area
+		const float HITBOX = 0.6f;
+
 	private:
 		//  Drone functions
 		vector<VertexFormat> generateVertices(int resX, int resY);
 		vector<unsigned int> generateIndices();
 
 	protected:
+
 		//  Drone colour
 		const glm::vec3 DRONEBODY = glm::vec3(0.7f, 0.7f, 0.7f);
 		const glm::vec3 DRONESUPPORT = glm::vec3(0.4f, 0.4f, 0.4f);
