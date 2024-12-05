@@ -6,7 +6,9 @@
 #include "lab_m1/Tema2/drone/drone.h"
 #include "lab_m1/Tema2/rotor/rotor.h"
 #include "lab_m1/Tema2/ground/ground.h"
-#include"lab_m1/Tema2/tree/tree.h"
+#include "lab_m1/Tema2/tree/tree.h"
+#include "lab_m1/Tema2/packet/packet.h"
+
 
 namespace m1
 {
@@ -46,6 +48,7 @@ namespace m1
         Drone* drone;
         Rotor* rotors[4];
         Tree* trees[TREES];
+        Packet* packet;
 
         glm::ivec2 startResolution;
         glm::mat4 projectionMatrix;
@@ -63,5 +66,6 @@ namespace m1
         bool collision;
         bool wHold;
         bool sHold;
+        bool pickUp;
     };
 }   // namespace m1

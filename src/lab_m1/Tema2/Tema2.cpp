@@ -96,6 +96,7 @@ void Tema2::Init()
     collision = false;
     wHold = false;
     sHold = false;
+    pickUp = false;
 
     for (int i = 1; i < GRIDLENGTH; i++) {
         usedX[i] = false;
@@ -161,6 +162,39 @@ void Tema2::Init()
 
         CreateMesh("tree", trees[i]->getVertices(), trees[i]->getIndices());
     }
+
+    //  Packet
+    packet = new Packet(startResolution.x, startResolution.y);
+
+    //  Generate a position
+    {
+        bool ok = false;
+        glm::vec3 position = glm::vec3(0, 0, 0);
+
+        while (!ok) {
+            int x = rand() % GRIDLENGTH + GRIDMARGINS;
+            int z = rand() % GRIDLENGTH + GRIDMARGINS;
+
+            if ((x < GRIDLENGTH - GRIDMARGINS) && (z < GRIDLENGTH - GRIDMARGINS)
+                && (!usedX[x] || !usedZ[z])) {
+
+                printf("%d %d\n", x, z);
+
+                float y = ground->calculateHeight((float)x, (float)z);
+                position = glm::vec3(x, y, z);
+
+                packet->setPosition(position);
+                packet->setScale(float(rand() % 5) / 10 + 1.0f);
+
+                ok = true;
+                usedX[x] = true;
+                usedZ[z] = true;
+            }
+        }
+    }
+
+    CreateMesh("packet", packet->getVertices(), packet->getIndices());
+
 }
 
 void Tema2::FrameStart()
@@ -302,6 +336,28 @@ void Tema2::Update(float deltaTimeSeconds)
             modelMatrix *= RotateOY(glm::radians(rotors[i]->getAngleOy()));
 
             RenderMesh(meshes["rotor"], shaders["VertexNormal"], modelMatrix);
+        }
+    }
+
+    //  PACKET
+    {
+        if (!pickUp) {
+            //  When idle, packet is not moving
+            glm::mat4 modelMatrix = glm::mat4(1);
+            modelMatrix *= Translate(packet->getPosition().x, packet->getPosition().y, packet->getPosition().z);
+            modelMatrix *= Scale(packet->getScale(), packet->getScale(), packet->getScale());
+
+            RenderMesh(meshes["packet"], shaders["VertexNormal"], modelMatrix);
+        }
+        else {
+            //  When picked up, packet follows drone movement
+            //  Set matrix for mesh
+            glm::mat4 modelMatrix = glm::mat4(1);
+            modelMatrix *= Translate(drone->getPosition().x, drone->getPosition().y, drone->getPosition().z);
+            modelMatrix *= RotateOY(glm::radians(drone->getAngleOy()));
+            modelMatrix *= RotateOZ(glm::radians(drone->getAngleOz()));
+            modelMatrix *= RotateOX(glm::radians(drone->getAngleOx()));
+            RenderMesh(meshes["packet"], shaders["VertexNormal"], modelMatrix);
         }
     }
 }
