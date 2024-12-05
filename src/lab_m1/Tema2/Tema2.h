@@ -39,7 +39,7 @@ namespace m1
     protected:
         static const int TREES = 45;
         static const int GRIDLENGTH = 79;
-        static const int GRIDMARGINS = 3;
+        static const int GRIDMARGINS = 4;
 
         Camera* camera;
         Ground* ground;

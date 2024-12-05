@@ -198,27 +198,41 @@ void Tema2::Update(float deltaTimeSeconds)
     //  DRONE
     {
         //  Check for collisions
-        if (!collision) {
-            float err = 0.1f;
-            
 
-            for (float alpha = 0; alpha < 360.0f; alpha += 45.0f) {
+        //  Ground collision
+        for (float alpha = 0; alpha < 360.0f && !collision; alpha += 45.0f) {
+            float x = drone->getPosition().x + drone->HITBOX * cos(alpha);
+            float z = drone->getPosition().z + drone->HITBOX * sin(alpha);
+
+            float height = ground->calculateHeight(x, z);
+
+            if (height >= drone->getPosition().y) {
+                collision = true;
+                break;
+            }
+        }
+
+        //  Tree collision
+        for (int i = 0; i < TREES && !collision; i++) {
+            for (float alpha = 0; alpha < 360.0f && !collision; alpha += 45.0f) {
                 float x = drone->getPosition().x + drone->HITBOX * cos(alpha);
                 float z = drone->getPosition().z + drone->HITBOX * sin(alpha);
 
-                float height = ground->calculateHeight(x, z);
+                glm::vec3 droneHitbox = glm::vec3(x, drone->getPosition().y, z);
 
-                if (height >= drone->getPosition().y - err) {
-                    collision = true;
-                    break;
-                }
+                collision = trees[i]->checkCollision(droneHitbox);
             }
         }
 
         //  Momentum animation
         if (cameraSpeedMove > 0.0f && (isSlidingForward || isSlidingBackward)) {
-            cameraSpeedMove -= deltaTimeSeconds / 1.5f;
-
+            if (collision) {
+                cameraSpeedMove -= deltaTimeSeconds * 1.5f;
+            }
+            else {
+                cameraSpeedMove -= deltaTimeSeconds / 1.5f;
+            }
+ 
             float upward = (15.0f - abs(drone->getAngleOx())) * (15.0f - abs(drone->getAngleOz()))
                 * cameraSpeedMove * deltaTimeSeconds;
             upward /= 10.0f;
@@ -368,8 +382,8 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
 
         //  Accelerate
         cameraSpeedMove += deltaTime;
-        if (cameraSpeedMove > 0.8f) {
-            cameraSpeedMove = 0.8f;
+        if (cameraSpeedMove > 0.7f) {
+            cameraSpeedMove = 0.7f;
         }
 
         //  Translate the camera upward
@@ -405,8 +419,8 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
 
         //  Accelerate
         cameraSpeedMove += deltaTime;
-        if (cameraSpeedMove > 0.8f) {
-            cameraSpeedMove = 0.8f;
+        if (cameraSpeedMove > 0.7f) {
+            cameraSpeedMove = 0.7f;
         }
 
         //  Translate the camera downward
@@ -506,9 +520,8 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
 void Tema2::OnKeyPress(int key, int mods)
 {
     if (key == GLFW_KEY_TAB) {
-        printf("Drone: %f %f %f\n", floor(drone->getPosition().x), drone->getPosition().y, floor(drone->getPosition().z));
-        float y = ground->calculateHeight(floor(drone->getPosition().x), floor(drone->getPosition().z));
-        printf("Terrain height: %f\n", y);
+        printf("Drone: %f %f %f\n", drone->getPosition().x, drone->getPosition().y, drone->getPosition().z);
+        printf("Tree 0: %f %f %f\n", trees[0]->getPosition().x, trees[0]->getPosition().y, trees[0]->getPosition().z);
     }
 }
 
