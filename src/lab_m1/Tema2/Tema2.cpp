@@ -97,6 +97,8 @@ void Tema2::Init()
     wHold = false;
     sHold = false;
     pickUp = false;
+    received = false;
+    timer = 0.0f;
 
     for (int i = 1; i < GRIDLENGTH; i++) {
         usedX[i] = false;
@@ -146,8 +148,6 @@ void Tema2::Init()
             if ((x < GRIDLENGTH - GRIDMARGINS) && (z < GRIDLENGTH - GRIDMARGINS)
                 && (!usedX[x] || !usedZ[z])) {
 
-                printf("%d %d\n", x, z);
-
                 float y = ground->calculateHeight((float) x, (float) z);
                 position = glm::vec3(x, y, z);
                 
@@ -165,7 +165,6 @@ void Tema2::Init()
 
     //  Packet
     packet = new Packet(startResolution.x, startResolution.y);
-
     //  Generate a position
     {
         bool ok = false;
@@ -178,12 +177,11 @@ void Tema2::Init()
             if ((x < GRIDLENGTH - GRIDMARGINS) && (z < GRIDLENGTH - GRIDMARGINS)
                 && (!usedX[x] || !usedZ[z])) {
 
-                printf("%d %d\n", x, z);
-
                 float y = ground->calculateHeight((float)x, (float)z);
                 position = glm::vec3(x, y, z);
 
                 packet->setPosition(position);
+                packet->setStartPosition(position);
                 packet->setScale(float(rand() % 5) / 10 + 1.0f);
 
                 ok = true;
@@ -195,6 +193,33 @@ void Tema2::Init()
 
     CreateMesh("packet", packet->getVertices(), packet->getIndices());
 
+    //  Delivery area
+    delivery = new Delivery(startResolution.x, startResolution.y);
+    //  Generate a position
+    {
+        bool ok = false;
+        glm::vec3 position = glm::vec3(0, 0, 0);
+
+        while (!ok) {
+            int x = rand() % GRIDLENGTH + GRIDMARGINS;
+            int z = rand() % GRIDLENGTH + GRIDMARGINS;
+
+            if ((x < GRIDLENGTH - GRIDMARGINS) && (z < GRIDLENGTH - GRIDMARGINS)
+                && (!usedX[x] || !usedZ[z])) {
+
+                float y = ground->calculateHeight((float)x, (float)z) + 0.5f;
+                position = glm::vec3(x, y, z);
+
+                delivery->setPosition(position);
+
+                ok = true;
+                usedX[x] = true;
+                usedZ[z] = true;
+            }
+        }
+    }
+
+    CreateMesh("delivery", delivery->getVertices(), delivery->getIndices());
 }
 
 void Tema2::FrameStart()
@@ -256,6 +281,26 @@ void Tema2::Update(float deltaTimeSeconds)
 
                 collision = trees[i]->checkCollision(droneHitbox);
             }
+        }
+
+        //  Packet collision
+        for (float alpha = 0; alpha < 360.0f && !pickUp && !received; alpha += 45.0f) {
+            float x = drone->getPosition().x + drone->HITBOX * cos(alpha);
+            float z = drone->getPosition().z + drone->HITBOX * sin(alpha);
+
+            glm::vec3 droneHitbox = glm::vec3(x, drone->getPosition().y, z);
+
+            pickUp = packet->checkCollision(droneHitbox);
+        }
+
+        //  Delivery collision
+        for (float alpha = 0; alpha < 360.0f && pickUp && !received; alpha += 45.0f) {
+            float x = drone->getPosition().x + drone->HITBOX * cos(alpha);
+            float z = drone->getPosition().z + drone->HITBOX * sin(alpha);
+
+            glm::vec3 droneHitbox = glm::vec3(x, drone->getPosition().y, z);
+
+            received = delivery->checkCollision(droneHitbox);
         }
 
         //  Momentum animation
@@ -351,17 +396,85 @@ void Tema2::Update(float deltaTimeSeconds)
         }
         else {
             //  When picked up, packet follows drone movement
+            //  But it must be below the drone
+            float offset = 0.8f;
+
             //  Set matrix for mesh
             glm::mat4 modelMatrix = glm::mat4(1);
-            modelMatrix *= Translate(drone->getPosition().x, drone->getPosition().y, drone->getPosition().z);
+            modelMatrix *= Translate(drone->getPosition().x, drone->getPosition().y - offset, drone->getPosition().z);
+            modelMatrix *= RotateOY(glm::radians(-45.0f));
+            modelMatrix *= Translate(0, offset, 0);
             modelMatrix *= RotateOY(glm::radians(drone->getAngleOy()));
             modelMatrix *= RotateOZ(glm::radians(drone->getAngleOz()));
             modelMatrix *= RotateOX(glm::radians(drone->getAngleOx()));
+            modelMatrix *= Translate(0, -offset, 0);
+            modelMatrix *= RotateOY(glm::radians(45.0f));
             RenderMesh(meshes["packet"], shaders["VertexNormal"], modelMatrix);
+        }
+
+        if (received) {
+            packet->setPosition(delivery->getPosition());
+            pickUp = false;
+        }
+    }
+
+    //  DELIVERY
+    if (pickUp || received) {
+        glm::mat4 modelMatrix = glm::mat4(1);
+        modelMatrix *= Translate(delivery->getPosition().x, delivery->getPosition().y,
+            delivery->getPosition().z);
+
+        RenderMesh(meshes["delivery"], shaders["VertexNormal"], modelMatrix);
+    }
+
+    //  DELIVERY COMPLETE - TRANSITION
+    if (received) {
+        timer += deltaTimeSeconds;
+
+        if (timer >= 3.0f) {
+            received = false;
+            timer = 0.0f;
+
+            //  Clear old positions
+            usedX[(int) packet->getStartPosition().x] = false;
+            usedZ[(int)packet->getStartPosition().z] = false;
+
+            usedX[(int)delivery->getPosition().x] = false;
+            usedZ[(int)delivery->getPosition().z] = false;
+
+            //  Generate new positions
+            for (int i = 0; i <= 1; i++) {
+                bool ok = false;
+                glm::vec3 position = glm::vec3(0, 0, 0);
+
+                while (!ok) {
+                    int x = rand() % GRIDLENGTH + GRIDMARGINS;
+                    int z = rand() % GRIDLENGTH + GRIDMARGINS;
+
+                    if ((x < GRIDLENGTH - GRIDMARGINS) && (z < GRIDLENGTH - GRIDMARGINS)
+                        && (!usedX[x] || !usedZ[z])) {
+
+                        float y = ground->calculateHeight((float)x, (float)z);
+                        position = glm::vec3(x, y, z);
+
+                        if (i == 0) {
+                            packet->setPosition(position);
+                            packet->setStartPosition(position);
+                            packet->setScale(float(rand() % 5) / 10 + 1.0f);
+                        }
+                        else {
+                            delivery->setPosition(position);
+                        }
+
+                        ok = true;
+                        usedX[x] = true;
+                        usedZ[z] = true;
+                    }
+                }
+            }
         }
     }
 }
-
 
 void Tema2::FrameEnd()
 {

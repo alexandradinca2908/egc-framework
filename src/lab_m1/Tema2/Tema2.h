@@ -8,7 +8,7 @@
 #include "lab_m1/Tema2/ground/ground.h"
 #include "lab_m1/Tema2/tree/tree.h"
 #include "lab_m1/Tema2/packet/packet.h"
-
+#include "lab_m1/Tema2/delivery/delivery.h"
 
 namespace m1
 {
@@ -39,8 +39,8 @@ namespace m1
         void OnWindowResize(int width, int height) override;
 
     protected:
-        static const int TREES = 45;
-        static const int GRIDLENGTH = 79;
+        static const int TREES = 55;
+        static const int GRIDLENGTH = 99;
         static const int GRIDMARGINS = 4;
 
         Camera* camera;
@@ -49,6 +49,7 @@ namespace m1
         Rotor* rotors[4];
         Tree* trees[TREES];
         Packet* packet;
+        Delivery* delivery;
 
         glm::ivec2 startResolution;
         glm::mat4 projectionMatrix;
@@ -67,5 +68,7 @@ namespace m1
         bool wHold;
         bool sHold;
         bool pickUp;
+        bool received;
+        float timer;
     };
 }   // namespace m1
