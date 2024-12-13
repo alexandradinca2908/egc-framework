@@ -85,11 +85,25 @@ void Tema2::Init()
 
     //  Initialize variables
     startResolution = window->GetResolution();
+
+    //  Perspective camera
     fov = RADIANS(60);
     aspectRatio = window->props.aspectRatio;
     nearPlane = 0.01f;
     farPlane = 200.0f;
 
+    //  Ortho camera
+    left = -5.0f;
+    right = 5.0f;
+    bottom = -3.0f;
+    top = 3.0f;
+    zNear = nearPlane;
+    zFar = farPlane;
+
+    //  Projection matrix
+    projectionMatrix = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
+
+    //  Animation variables
     cameraSpeedMove = 0.0f;
     isSlidingForward = false;
     isSlidingBackward = false;
@@ -100,6 +114,7 @@ void Tema2::Init()
     received = false;
     timer = 0.0f;
 
+    //  Grid tracker
     for (int i = 1; i < GRIDLENGTH; i++) {
         usedX[i] = false;
         usedZ[i] = false;
@@ -108,8 +123,8 @@ void Tema2::Init()
     usedX[5] = true;
     usedZ[5] = true;
 
-    //  Projection matrix
-    projectionMatrix = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
+    //  Minimap
+    miniViewportArea = ViewportArea(startResolution.x / 1.35f, startResolution.y / 1.35f, startResolution.x / 4.f, startResolution.y / 4.f);
 
     //  Camera object
     camera = new Camera();
@@ -233,9 +248,7 @@ void Tema2::FrameStart()
     glViewport(0, 0, resolution.x, resolution.y);
 }
 
-
-void Tema2::Update(float deltaTimeSeconds)
-{
+void Tema2::RenderScene(float deltaTimeSeconds) {
     //  TREES
     {
         for (int i = 0; i < TREES; i++) {
@@ -245,7 +258,7 @@ void Tema2::Update(float deltaTimeSeconds)
             modelMatrix *= Scale(trees[i]->getScale(), trees[i]->getScale(), trees[i]->getScale());
 
             RenderMesh(meshes["tree"], shaders["VertexNormal"], modelMatrix);
-        }  
+        }
     }
 
     //  GROUND
@@ -311,11 +324,11 @@ void Tema2::Update(float deltaTimeSeconds)
             else {
                 cameraSpeedMove -= deltaTimeSeconds / 1.5f;
             }
- 
+
             float upward = (15.0f - abs(drone->getAngleOx())) * (15.0f - abs(drone->getAngleOz()))
                 * cameraSpeedMove * deltaTimeSeconds;
             upward /= 10.0f;
-            
+
             float forward = drone->getAngleOx() * cameraSpeedMove * deltaTimeSeconds;
             float right = drone->getAngleOz() * cameraSpeedMove * deltaTimeSeconds;
 
@@ -325,7 +338,7 @@ void Tema2::Update(float deltaTimeSeconds)
                 right *= -1;
             }
 
-            camera->TranslateUpward(upward);           
+            camera->TranslateUpward(upward);
             camera->MoveForward(forward);
             camera->TranslateRight(right);
         }
@@ -333,7 +346,7 @@ void Tema2::Update(float deltaTimeSeconds)
         if (cameraSpeedMove <= 0.0f) {
             collision = false;
         }
-        
+
         //  Update position
         drone->setPosition(camera->GetTargetPosition());
 
@@ -397,18 +410,17 @@ void Tema2::Update(float deltaTimeSeconds)
         else {
             //  When picked up, packet follows drone movement
             //  But it must be below the drone
-            float offset = 0.8f;
+            float offset = 0.6f;
 
             //  Set matrix for mesh
             glm::mat4 modelMatrix = glm::mat4(1);
             modelMatrix *= Translate(drone->getPosition().x, drone->getPosition().y - offset, drone->getPosition().z);
-            modelMatrix *= RotateOY(glm::radians(-45.0f));
-            modelMatrix *= Translate(0, offset, 0);
             modelMatrix *= RotateOY(glm::radians(drone->getAngleOy()));
+            modelMatrix *= RotateOY(glm::radians(-45.0f));
             modelMatrix *= RotateOZ(glm::radians(drone->getAngleOz()));
             modelMatrix *= RotateOX(glm::radians(drone->getAngleOx()));
-            modelMatrix *= Translate(0, -offset, 0);
             modelMatrix *= RotateOY(glm::radians(45.0f));
+            modelMatrix *= Translate(0, -offset, 0);
             RenderMesh(meshes["packet"], shaders["VertexNormal"], modelMatrix);
         }
 
@@ -436,7 +448,7 @@ void Tema2::Update(float deltaTimeSeconds)
             timer = 0.0f;
 
             //  Clear old positions
-            usedX[(int) packet->getStartPosition().x] = false;
+            usedX[(int)packet->getStartPosition().x] = false;
             usedZ[(int)packet->getStartPosition().z] = false;
 
             usedX[(int)delivery->getPosition().x] = false;
@@ -476,9 +488,117 @@ void Tema2::Update(float deltaTimeSeconds)
     }
 }
 
+void Tema2::DrawScene() {
+    //  TREES
+    {
+        for (int i = 0; i < TREES; i++) {
+            glm::mat4 modelMatrix = glm::mat4(1);
+            modelMatrix *= Translate(trees[i]->getPosition().x, trees[i]->getPosition().y,
+                trees[i]->getPosition().z);
+            modelMatrix *= Scale(trees[i]->getScale(), trees[i]->getScale(), trees[i]->getScale());
+
+            RenderMesh(meshes["tree"], shaders["VertexNormal"], modelMatrix);
+        }
+    }
+
+    //  GROUND
+    {
+        glm::mat4 modelMatrix = glm::mat4(1);
+        RenderMesh(meshes["ground"], shaders["VertexNormal"], modelMatrix);
+    }
+
+    //  DRONE
+    {
+        //  Set matrix for mesh
+        glm::mat4 modelMatrix = glm::mat4(1);
+        modelMatrix *= Translate(drone->getPosition().x, drone->getPosition().y, drone->getPosition().z);
+        modelMatrix *= RotateOY(glm::radians(-45.0f));
+        modelMatrix *= RotateOY(glm::radians(drone->getAngleOy()));
+        modelMatrix *= RotateOZ(glm::radians(drone->getAngleOz()));
+        modelMatrix *= RotateOX(glm::radians(drone->getAngleOx()));
+        modelMatrix *= RotateOY(glm::radians(45.0f));
+        RenderMesh(meshes["drone"], shaders["VertexNormal"], modelMatrix);
+    }
+
+    //  ROTORS
+    {
+        for (int i = 0; i < 4; i++) {
+            //  Update position
+            glm::vec3 offset = drone->calculateRotorOffset(startResolution.x, startResolution.y, i);
+
+            //  Set matrix for mesh
+            glm::mat4 modelMatrix = glm::mat4(1);
+            modelMatrix *= Translate(rotors[i]->getPosition().x, rotors[i]->getPosition().y, rotors[i]->getPosition().z);
+            modelMatrix *= Translate(-offset.x, -offset.y, -offset.z);
+            modelMatrix *= RotateOY(glm::radians(-45.0f));
+            modelMatrix *= RotateOY(glm::radians(drone->getAngleOy()));
+            modelMatrix *= RotateOZ(glm::radians(drone->getAngleOz()));
+            modelMatrix *= RotateOX(glm::radians(drone->getAngleOx()));
+            modelMatrix *= RotateOY(glm::radians(45.0f));
+            modelMatrix *= Translate(offset.x, offset.y, offset.z);
+            modelMatrix *= RotateOY(glm::radians(rotors[i]->getAngleOy()));
+
+            RenderMesh(meshes["rotor"], shaders["VertexNormal"], modelMatrix);
+        }
+    }
+
+    //  PACKET
+    {
+        if (!pickUp) {
+            //  When idle, packet is not moving
+            glm::mat4 modelMatrix = glm::mat4(1);
+            modelMatrix *= Translate(packet->getPosition().x, packet->getPosition().y, packet->getPosition().z);
+            modelMatrix *= Scale(packet->getScale(), packet->getScale(), packet->getScale());
+
+            RenderMesh(meshes["packet"], shaders["VertexNormal"], modelMatrix);
+        }
+        else {
+            //  When picked up, packet follows drone movement
+            //  But it must be below the drone
+            float offset = 0.8f;
+
+            //  Set matrix for mesh
+            glm::mat4 modelMatrix = glm::mat4(1);
+            modelMatrix *= Translate(drone->getPosition().x, drone->getPosition().y - offset, drone->getPosition().z);
+            modelMatrix *= RotateOY(glm::radians(drone->getAngleOy()));
+            modelMatrix *= RotateOY(glm::radians(-45.0f));
+            modelMatrix *= RotateOZ(glm::radians(drone->getAngleOz()));
+            modelMatrix *= RotateOX(glm::radians(drone->getAngleOx()));
+            modelMatrix *= RotateOY(glm::radians(45.0f));
+            modelMatrix *= Translate(0, -offset, 0);
+            RenderMesh(meshes["packet"], shaders["VertexNormal"], modelMatrix);
+        }
+    }
+
+    //  DELIVERY
+    if (pickUp || received) {
+        glm::mat4 modelMatrix = glm::mat4(1);
+        modelMatrix *= Translate(delivery->getPosition().x, delivery->getPosition().y,
+            delivery->getPosition().z);
+
+        RenderMesh(meshes["delivery"], shaders["VertexNormal"], modelMatrix);
+    }
+}
+
+void Tema2::Update(float deltaTimeSeconds)
+{
+    glm::ivec2 resolution = window->GetResolution();
+    glViewport(0, 0, resolution.x, resolution.y);
+
+    projectionMatrix = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
+    RenderScene(deltaTimeSeconds);
+
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glViewport(miniViewportArea.x, miniViewportArea.y, miniViewportArea.width, miniViewportArea.height);
+
+    // Render the scene again, in the new viewport
+    projectionMatrix = glm::ortho(left, right, bottom, top, zNear, zFar);
+    DrawScene();
+}
+
 void Tema2::FrameEnd()
 {
-    DrawCoordinateSystem(camera->GetViewMatrix(), projectionMatrix);
+    /*DrawCoordinateSystem(camera->GetViewMatrix(), projectionMatrix);*/
 }
 
 
@@ -731,4 +851,6 @@ void Tema2::OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY)
 
 void Tema2::OnWindowResize(int width, int height)
 {
+    glm::ivec2 resolution = window->GetResolution();
+    miniViewportArea = ViewportArea(resolution.x / 1.35f, resolution.y / 1.35f, resolution.x / 4.f, resolution.y / 4.f);
 }

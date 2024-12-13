@@ -15,6 +15,17 @@ namespace m1
     class Tema2 : public gfxc::SimpleScene
     {
     public:
+        struct ViewportArea
+        {
+            ViewportArea() : x(0), y(0), width(1), height(1) {}
+            ViewportArea(int x, int y, int width, int height)
+                : x(x), y(y), width(width), height(height) {}
+            int x;
+            int y;
+            int width;
+            int height;
+        };
+
         Tema2();
         ~Tema2();
 
@@ -28,6 +39,8 @@ namespace m1
         void CreateMesh(const char* name, const std::vector<VertexFormat>& vertices, const std::vector<unsigned int>& indices);
         void RenderMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix) override;
         void RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix);
+        void RenderScene(float deltaTimeSeconds);
+        void DrawScene();
 
         void OnInputUpdate(float deltaTime, int mods) override;
         void OnKeyPress(int key, int mods) override;
@@ -39,10 +52,12 @@ namespace m1
         void OnWindowResize(int width, int height) override;
 
     protected:
+        //  Constants
         static const int TREES = 55;
         static const int GRIDLENGTH = 99;
         static const int GRIDMARGINS = 4;
 
+        //  Game objects
         Camera* camera;
         Ground* ground;
         Drone* drone;
@@ -50,14 +65,25 @@ namespace m1
         Tree* trees[TREES];
         Packet* packet;
         Delivery* delivery;
+        ViewportArea miniViewportArea;
 
         glm::ivec2 startResolution;
+        
+        //  Perspective caera
         glm::mat4 projectionMatrix;
-
         float fov;
         float aspectRatio;
         float nearPlane;
         float farPlane;
+
+        //  Ortho camera
+        float left;
+        float right;
+        float bottom;
+        float top;
+        float zNear;
+        float zFar;
+
         bool usedX[GRIDLENGTH];
         bool usedZ[GRIDLENGTH];
 
