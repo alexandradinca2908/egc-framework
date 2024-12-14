@@ -25,7 +25,6 @@ namespace m1
         void RotateThirdPerson_OZ(float angle);
         glm::mat4 GetViewMatrix();
         glm::vec3 GetTargetPosition();
-        glm::vec3 GetLeftBottomPosition();
 
     public:
         float distanceToTarget;

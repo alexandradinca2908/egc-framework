@@ -83,6 +83,24 @@ void Tema2::Init()
         shaders[shader->GetName()] = shader;
     }
 
+    //  Create shadow shader
+    {
+        Shader* shader = new Shader("ShadowShader");
+        shader->AddShader(PATH_JOIN(window->props.selfDir, SOURCE_PATH::M1, "Tema2", "shadow-shaders", "VertexShader.glsl"), GL_VERTEX_SHADER);
+        shader->AddShader(PATH_JOIN(window->props.selfDir, SOURCE_PATH::M1, "Tema2", "shadow-shaders", "FragmentShader.glsl"), GL_FRAGMENT_SHADER);
+        shader->CreateAndLink();
+        shaders[shader->GetName()] = shader;
+    }
+
+    //  Create delivery shader
+    {
+        Shader* shader = new Shader("DeliveryShader");
+        shader->AddShader(PATH_JOIN(window->props.selfDir, SOURCE_PATH::M1, "Tema2", "delivery", "shaders", "VertexShader.glsl"), GL_VERTEX_SHADER);
+        shader->AddShader(PATH_JOIN(window->props.selfDir, SOURCE_PATH::M1, "Tema2", "delivery", "shaders", "FragmentShader.glsl"), GL_FRAGMENT_SHADER);
+        shader->CreateAndLink();
+        shaders[shader->GetName()] = shader;
+    }
+
     //  Initialize variables
     startResolution = window->GetResolution();
 
@@ -262,6 +280,7 @@ void Tema2::RenderScenePerspective(float deltaTimeSeconds) {
             modelMatrix *= Scale(trees[i]->getScale(), trees[i]->getScale(), trees[i]->getScale());
 
             RenderMesh(meshes["tree"], shaders["VertexNormal"], modelMatrix);
+            RenderMesh(meshes["tree"], shaders["ShadowShader"], modelMatrix);
         }
     }
 
@@ -274,6 +293,19 @@ void Tema2::RenderScenePerspective(float deltaTimeSeconds) {
     //  DRONE
     {
         //  Check for collisions
+
+        //  Out of bounds collision
+        if (!collision && (drone->getPosition().x < 0 || drone->getPosition().x > GRIDLENGTH)) {
+            collision = true;
+        }
+
+        if (!collision && (drone->getPosition().z < 0 || drone->getPosition().z > GRIDLENGTH)) {
+            collision = true;
+        }
+
+        if (!collision && drone->getPosition().y > GRIDLENGTH) {
+            collision = true;
+        }
 
         //  Ground collision
         for (float alpha = 0; alpha < 360.0f && !collision; alpha += 45.0f) {
@@ -363,6 +395,7 @@ void Tema2::RenderScenePerspective(float deltaTimeSeconds) {
         modelMatrix *= RotateOX(glm::radians(drone->getAngleOx()));
         modelMatrix *= RotateOY(glm::radians(45.0f));
         RenderMesh(meshes["drone"], shaders["VertexNormal"], modelMatrix);
+        RenderMesh(meshes["drone"], shaders["ShadowShader"], modelMatrix);
     }
 
     //  ROTORS
@@ -398,6 +431,7 @@ void Tema2::RenderScenePerspective(float deltaTimeSeconds) {
             modelMatrix *= RotateOY(glm::radians(rotors[i]->getAngleOy()));
 
             RenderMesh(meshes["rotor"], shaders["VertexNormal"], modelMatrix);
+            RenderMesh(meshes["rotor"], shaders["ShadowShader"], modelMatrix);
         }
     }
 
@@ -410,6 +444,7 @@ void Tema2::RenderScenePerspective(float deltaTimeSeconds) {
             modelMatrix *= Scale(packet->getScale(), packet->getScale(), packet->getScale());
 
             RenderMesh(meshes["packet"], shaders["VertexNormal"], modelMatrix);
+            RenderMesh(meshes["packet"], shaders["ShadowShader"], modelMatrix);
         }
         else {
             //  When picked up, packet follows drone movement
@@ -426,6 +461,7 @@ void Tema2::RenderScenePerspective(float deltaTimeSeconds) {
             modelMatrix *= RotateOY(glm::radians(45.0f));
             modelMatrix *= Translate(0, -offset, 0);
             RenderMesh(meshes["packet"], shaders["VertexNormal"], modelMatrix);
+            RenderMesh(meshes["packet"], shaders["ShadowShader"], modelMatrix);
         }
 
         if (received) {
@@ -440,7 +476,7 @@ void Tema2::RenderScenePerspective(float deltaTimeSeconds) {
         modelMatrix *= Translate(delivery->getPosition().x, delivery->getPosition().y,
             delivery->getPosition().z);
 
-        RenderMesh(meshes["delivery"], shaders["VertexNormal"], modelMatrix);
+        RenderMesh(meshes["delivery"], shaders["DeliveryShader"], modelMatrix);
     }
 
     //  DELIVERY COMPLETE - TRANSITION
@@ -494,7 +530,7 @@ void Tema2::RenderScenePerspective(float deltaTimeSeconds) {
     //  GUIDE ARROW
     {
         //  Update position
-        arrow->setPosition(drone->getPosition() - glm::vec3(0, 0.5f, 0));
+        arrow->setPosition(drone->getPosition() - glm::vec3(0, 0.55f, 0));
 
         //  Calculate the pointing direction
         if (!pickUp) {
@@ -612,7 +648,7 @@ void Tema2::RenderSceneOrtho() {
         modelMatrix *= Translate(delivery->getPosition().x, delivery->getPosition().y,
             delivery->getPosition().z);
 
-        RenderMesh(meshes["delivery"], shaders["VertexNormal"], modelMatrix);
+        RenderMesh(meshes["delivery"], shaders["DeliveryShader"], modelMatrix);
     }
 }
 
@@ -621,13 +657,14 @@ void Tema2::Update(float deltaTimeSeconds)
     glm::ivec2 resolution = window->GetResolution();
     glViewport(0, 0, resolution.x, resolution.y);
 
+    //  Render main scene in perspective mode
     projectionMatrix = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
     RenderScenePerspective(deltaTimeSeconds);
 
     glClear(GL_DEPTH_BUFFER_BIT);
     glViewport(miniViewportArea.x, miniViewportArea.y, miniViewportArea.width, miniViewportArea.height);
 
-    // Render the scene again, in the new viewport
+    //  Render the scene again, in the new viewport
     projectionMatrix = glm::ortho(left, right, bottom, top, zNear, zFar);
     RenderSceneOrtho();
 }
@@ -824,13 +861,6 @@ void Tema2::OnKeyRelease(int key, int mods)
 
 void Tema2::OnMouseMove(int mouseX, int mouseY, int deltaX, int deltaY)
 {
-    // Add mouse move event
-    //float sensivityOX = 0.001f;
-    //float sensivityOY = 0.001f;
-
-    ////  Rotate camera in third-person
-    //camera->RotateThirdPerson_OX(-deltaY * sensivityOX);
-    //camera->RotateThirdPerson_OY(-deltaX * sensivityOY);
 }
 
 

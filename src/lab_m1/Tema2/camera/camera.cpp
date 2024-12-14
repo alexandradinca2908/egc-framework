@@ -115,14 +115,3 @@ glm::vec3 Camera::GetTargetPosition()
 {
     return position + forward * distanceToTarget;
 }
-
-glm::vec3 Camera::GetLeftBottomPosition()
-{
-    float offsetRight = 1.5f;
-    float offsetDown = 1.0f;
-    float distanceForward = 2.0f;
-
-    glm::vec3 right = glm::normalize(glm::cross(forward, up));
-
-    return position + forward * distanceForward - right * offsetRight - up * offsetDown;
-}
