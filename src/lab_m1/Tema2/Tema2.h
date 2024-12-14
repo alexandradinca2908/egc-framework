@@ -9,6 +9,7 @@
 #include "lab_m1/Tema2/tree/tree.h"
 #include "lab_m1/Tema2/packet/packet.h"
 #include "lab_m1/Tema2/delivery/delivery.h"
+#include "lab_m1/Tema2/arrow/arrow.h"
 
 namespace m1
 {
@@ -38,9 +39,8 @@ namespace m1
 
         void CreateMesh(const char* name, const std::vector<VertexFormat>& vertices, const std::vector<unsigned int>& indices);
         void RenderMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix) override;
-        void RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix);
-        void RenderScene(float deltaTimeSeconds);
-        void DrawScene();
+        void RenderScenePerspective(float deltaTimeSeconds);
+        void RenderSceneOrtho();
 
         void OnInputUpdate(float deltaTime, int mods) override;
         void OnKeyPress(int key, int mods) override;
@@ -65,6 +65,7 @@ namespace m1
         Tree* trees[TREES];
         Packet* packet;
         Delivery* delivery;
+        Arrow* arrow;
         ViewportArea miniViewportArea;
 
         glm::ivec2 startResolution;

@@ -86,6 +86,14 @@ void Tema2::Init()
     //  Initialize variables
     startResolution = window->GetResolution();
 
+    //  Camera object
+    camera = new Camera();
+    camera->Set(glm::vec3(0, 2, 3.5f), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
+    camera->RotateThirdPerson_OY(glm::radians(220.0f));
+    camera->TranslateForward(6.0f);
+    camera->TranslateRight(-2.0f);
+    camera->TranslateUpward(3.0f);
+
     //  Perspective camera
     fov = RADIANS(60);
     aspectRatio = window->props.aspectRatio;
@@ -125,14 +133,6 @@ void Tema2::Init()
 
     //  Minimap
     miniViewportArea = ViewportArea(startResolution.x / 1.35f, startResolution.y / 1.35f, startResolution.x / 4.f, startResolution.y / 4.f);
-
-    //  Camera object
-    camera = new Camera();
-    camera->Set(glm::vec3(0, 2, 3.5f), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
-    camera->RotateThirdPerson_OY(glm::radians(220.0f));
-    camera->TranslateForward(6.0f);
-    camera->TranslateRight(-2.0f);
-    camera->TranslateUpward(3.0f);
     
     //  Ground
     ground = new Ground(startResolution.x, startResolution.y);
@@ -235,6 +235,10 @@ void Tema2::Init()
     }
 
     CreateMesh("delivery", delivery->getVertices(), delivery->getIndices());
+
+    //  Guide arrow
+    arrow = new Arrow(startResolution.x, startResolution.y, glm::vec3(0, 0, 0));
+    CreateMesh("arrow", arrow->getVertices(), arrow->getIndices());
 }
 
 void Tema2::FrameStart()
@@ -248,7 +252,7 @@ void Tema2::FrameStart()
     glViewport(0, 0, resolution.x, resolution.y);
 }
 
-void Tema2::RenderScene(float deltaTimeSeconds) {
+void Tema2::RenderScenePerspective(float deltaTimeSeconds) {
     //  TREES
     {
         for (int i = 0; i < TREES; i++) {
@@ -264,7 +268,7 @@ void Tema2::RenderScene(float deltaTimeSeconds) {
     //  GROUND
     {
         glm::mat4 modelMatrix = glm::mat4(1);
-        RenderSimpleMesh(meshes["ground"], shaders["GroundShader"], modelMatrix);
+        RenderMesh(meshes["ground"], shaders["GroundShader"], modelMatrix);
     }
 
     //  DRONE
@@ -486,9 +490,41 @@ void Tema2::RenderScene(float deltaTimeSeconds) {
             }
         }
     }
+
+    //  GUIDE ARROW
+    {
+        //  Update position
+        arrow->setPosition(drone->getPosition() - glm::vec3(0, 0.5f, 0));
+
+        //  Calculate the pointing direction
+        if (!pickUp) {
+            //  Point towards the packet
+            float dX = drone->getPosition().x - packet->getPosition().x;
+            float dZ = drone->getPosition().z - packet->getPosition().z;
+
+            float angle = glm::degrees(atan2(dX, dZ));
+
+            arrow->setAngleOy(angle);
+        }
+        else {
+            //  Point towards the destination
+            float dX = drone->getPosition().x - delivery->getPosition().x;
+            float dZ = drone->getPosition().z - delivery->getPosition().z;
+
+            float angle = glm::degrees(atan2(dX, dZ));
+
+            arrow->setAngleOy(angle);
+        }
+
+        //  Set matrix for mesh
+        glm::mat4 modelMatrix = glm::mat4(1);
+        modelMatrix *= Translate(arrow->getPosition().x, arrow->getPosition().y, arrow->getPosition().z);
+        modelMatrix *= RotateOY(glm::radians(arrow->getAngleOy()));
+        RenderMesh(meshes["arrow"], shaders["VertexNormal"], modelMatrix);
+    }
 }
 
-void Tema2::DrawScene() {
+void Tema2::RenderSceneOrtho() {
     //  TREES
     {
         for (int i = 0; i < TREES; i++) {
@@ -504,7 +540,7 @@ void Tema2::DrawScene() {
     //  GROUND
     {
         glm::mat4 modelMatrix = glm::mat4(1);
-        RenderMesh(meshes["ground"], shaders["VertexNormal"], modelMatrix);
+        RenderMesh(meshes["ground"], shaders["GroundShader"], modelMatrix);
     }
 
     //  DRONE
@@ -586,19 +622,19 @@ void Tema2::Update(float deltaTimeSeconds)
     glViewport(0, 0, resolution.x, resolution.y);
 
     projectionMatrix = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
-    RenderScene(deltaTimeSeconds);
+    RenderScenePerspective(deltaTimeSeconds);
 
     glClear(GL_DEPTH_BUFFER_BIT);
     glViewport(miniViewportArea.x, miniViewportArea.y, miniViewportArea.width, miniViewportArea.height);
 
     // Render the scene again, in the new viewport
     projectionMatrix = glm::ortho(left, right, bottom, top, zNear, zFar);
-    DrawScene();
+    RenderSceneOrtho();
 }
 
 void Tema2::FrameEnd()
 {
-    /*DrawCoordinateSystem(camera->GetViewMatrix(), projectionMatrix);*/
+    DrawCoordinateSystem(camera->GetViewMatrix(), projectionMatrix);
 }
 
 
@@ -615,40 +651,6 @@ void Tema2::RenderMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix)
 
     mesh->Render();
 }
-
-void Tema2::RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix)
-{
-    if (!mesh || !shader || !shader->GetProgramID())
-        return;
-
-    //  Render an object using the specified shader and the specified position
-    glUseProgram(shader->program);
-
-    //  Get shader location for uniform mat4 "Model"
-    int location = glGetUniformLocation(shader->program, "Model");
-
-    //  Set shader uniform "Model" to modelMatrix
-    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(modelMatrix));
-
-    //  Get shader location for uniform mat4 "View"
-    location = glGetUniformLocation(shader->program, "View");
-
-    //  Set shader uniform "View" to viewMatrix
-    glm::mat4 viewMatrix = camera->GetViewMatrix();
-    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(viewMatrix));
-
-    //  Get shader location for uniform mat4 "Projection"
-    location = glGetUniformLocation(shader->program, "Projection");
-
-    //  Set shader uniform "Projection" to projectionMatrix
-    glm::mat4 projectionMatrix = GetSceneCamera()->GetProjectionMatrix();
-    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
-
-    //  Draw the object
-    glBindVertexArray(mesh->GetBuffers()->m_VAO);
-    glDrawElements(mesh->GetDrawMode(), static_cast<int>(mesh->indices.size()), GL_UNSIGNED_INT, 0);
-}
-
 
 void Tema2::OnInputUpdate(float deltaTime, int mods)
 {
@@ -757,7 +759,7 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
         }
 
         drone->setAngleOy(angle);
-        
+
         //  Rotate the camera with it
         camera->RotateThirdPerson_OY(glm::radians(diff));
     }
