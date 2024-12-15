@@ -1,6 +1,7 @@
 #pragma once
 
 #include "components/simple_scene.h"
+#include "components/text_renderer.h"
 #include "lab_m1/Tema2/transform3D.h"
 #include "lab_m1/Tema2/camera/camera.h"
 #include "lab_m1/Tema2/drone/drone.h"
@@ -10,6 +11,8 @@
 #include "lab_m1/Tema2/packet/packet.h"
 #include "lab_m1/Tema2/delivery/delivery.h"
 #include "lab_m1/Tema2/arrow/arrow.h"
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 namespace m1
 {
@@ -56,6 +59,7 @@ namespace m1
         static const int TREES = 55;
         static const int GRIDLENGTH = 99;
         static const int GRIDMARGINS = 4;
+        const double TIMELEFT = 100.0;
 
         //  Game objects
         Camera* camera;
@@ -68,6 +72,7 @@ namespace m1
         Arrow* arrow;
         ViewportArea miniViewportArea;
 
+        gfxc::TextRenderer* textRenderer;
         glm::ivec2 startResolution;
         
         //  Perspective caera
@@ -97,5 +102,7 @@ namespace m1
         bool pickUp;
         bool received;
         float timer;
+        double stopwatch;
+        int deliveredPackets;
     };
 }   // namespace m1

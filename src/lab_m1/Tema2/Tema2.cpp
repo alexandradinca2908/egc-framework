@@ -105,158 +105,186 @@ void Tema2::Init()
     startResolution = window->GetResolution();
 
     //  Camera object
-    camera = new Camera();
-    camera->Set(glm::vec3(0, 2, 3.5f), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
-    camera->RotateThirdPerson_OY(glm::radians(220.0f));
-    camera->TranslateForward(6.0f);
-    camera->TranslateRight(-2.0f);
-    camera->TranslateUpward(3.0f);
+    {
+        camera = new Camera();
+        camera->Set(glm::vec3(0, 2, 3.5f), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
+        camera->RotateThirdPerson_OY(glm::radians(220.0f));
+        camera->TranslateForward(6.0f);
+        camera->TranslateRight(-2.0f);
+        camera->TranslateUpward(3.0f);
 
-    //  Perspective camera
-    fov = RADIANS(60);
-    aspectRatio = window->props.aspectRatio;
-    nearPlane = 0.01f;
-    farPlane = 200.0f;
+        //  Perspective camera
+        fov = RADIANS(60);
+        aspectRatio = window->props.aspectRatio;
+        nearPlane = 0.01f;
+        farPlane = 200.0f;
 
-    //  Ortho camera
-    left = -5.0f;
-    right = 5.0f;
-    bottom = -3.0f;
-    top = 3.0f;
-    zNear = nearPlane;
-    zFar = farPlane;
+        //  Ortho camera
+        left = -5.0f;
+        right = 5.0f;
+        bottom = -3.0f;
+        top = 3.0f;
+        zNear = nearPlane;
+        zFar = farPlane;
+    }
 
     //  Projection matrix
     projectionMatrix = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
 
     //  Animation variables
-    cameraSpeedMove = 0.0f;
-    isSlidingForward = false;
-    isSlidingBackward = false;
-    collision = false;
-    wHold = false;
-    sHold = false;
-    pickUp = false;
-    received = false;
-    timer = 0.0f;
+    {
+        cameraSpeedMove = 0.0f;
+        isSlidingForward = false;
+        isSlidingBackward = false;
+        collision = false;
+        wHold = false;
+        sHold = false;
+        pickUp = false;
+        received = false;
+        timer = 0.0f;
+        deliveredPackets = 0;
+        stopwatch = TIMELEFT;
+    }
 
     //  Grid tracker
-    for (int i = 1; i < GRIDLENGTH; i++) {
-        usedX[i] = false;
-        usedZ[i] = false;
+    {
+        for (int i = 1; i < GRIDLENGTH; i++) {
+            usedX[i] = false;
+            usedZ[i] = false;
+        }
+        //  Drone spawn point is busy
+        usedX[5] = true;
+        usedZ[5] = true;
     }
-    //  Drone spawn point is busy
-    usedX[5] = true;
-    usedZ[5] = true;
 
     //  Minimap
     miniViewportArea = ViewportArea(startResolution.x / 1.35f, startResolution.y / 1.35f, startResolution.x / 4.f, startResolution.y / 4.f);
     
     //  Ground
-    ground = new Ground(startResolution.x, startResolution.y);
-    CreateMesh("ground", ground->getVertices(), ground->getIndices());
+    {
+        ground = new Ground(startResolution.x, startResolution.y);
+        CreateMesh("ground", ground->getVertices(), ground->getIndices());
+    }
 
     //  Drone
-    drone = new Drone(startResolution.x, startResolution.y, camera->GetTargetPosition());
-    CreateMesh("drone", drone->getVertices(), drone->getIndices());
+    {
+        drone = new Drone(startResolution.x, startResolution.y, camera->GetTargetPosition());
+        CreateMesh("drone", drone->getVertices(), drone->getIndices());
+    }
 
     //  Rotors
-    for (int i = 0; i < 4; i++) {
-        rotors[i] = new Rotor(startResolution.x, startResolution.y, 
-            drone->calculateRotorOffset(startResolution.x, startResolution.y, i));
+    {
+        for (int i = 0; i < 4; i++) {
+            rotors[i] = new Rotor(startResolution.x, startResolution.y,
+                drone->calculateRotorOffset(startResolution.x, startResolution.y, i));
+        }
+        CreateMesh("rotor", rotors[0]->getVertices(), rotors[0]->getIndices());
     }
-    CreateMesh("rotor", rotors[0]->getVertices(), rotors[0]->getIndices());
 
     //  Trees
-    srand(time(NULL));
-    for (int i = 0; i < TREES; i++) {
-        //  Generate a position
-        bool ok = false;
-        glm::vec3 position = glm::vec3(0, 0, 0);
+    {
+        srand(time(NULL));
+        for (int i = 0; i < TREES; i++) {
+            //  Generate a position
+            bool ok = false;
+            glm::vec3 position = glm::vec3(0, 0, 0);
 
-        while (!ok) {
-            int x = rand() % GRIDLENGTH + GRIDMARGINS;
-            int z = rand() % GRIDLENGTH + GRIDMARGINS;
+            while (!ok) {
+                int x = rand() % GRIDLENGTH + GRIDMARGINS;
+                int z = rand() % GRIDLENGTH + GRIDMARGINS;
 
-            if ((x < GRIDLENGTH - GRIDMARGINS) && (z < GRIDLENGTH - GRIDMARGINS)
-                && (!usedX[x] || !usedZ[z])) {
+                if ((x < GRIDLENGTH - GRIDMARGINS) && (z < GRIDLENGTH - GRIDMARGINS)
+                    && (!usedX[x] || !usedZ[z])) {
 
-                float y = ground->calculateHeight((float) x, (float) z);
-                position = glm::vec3(x, y, z);
-                
-                ok = true;
-                usedX[x] = true;
-                usedZ[z] = true;
+                    float y = ground->calculateHeight((float)x, (float)z);
+                    position = glm::vec3(x, y, z);
+
+                    ok = true;
+                    usedX[x] = true;
+                    usedZ[z] = true;
+                }
             }
+
+            trees[i] = new Tree(startResolution.x, startResolution.y, position);
+            trees[i]->setScale(float(rand() % 5) / 10 + 1.0f);
+
+            CreateMesh("tree", trees[i]->getVertices(), trees[i]->getIndices());
         }
-
-        trees[i] = new Tree(startResolution.x, startResolution.y, position);
-        trees[i]->setScale(float(rand() % 5) / 10 + 1.0f);
-
-        CreateMesh("tree", trees[i]->getVertices(), trees[i]->getIndices());
     }
 
     //  Packet
-    packet = new Packet(startResolution.x, startResolution.y);
-    //  Generate a position
     {
-        bool ok = false;
-        glm::vec3 position = glm::vec3(0, 0, 0);
+        packet = new Packet(startResolution.x, startResolution.y);
+        //  Generate a position
+        {
+            bool ok = false;
+            glm::vec3 position = glm::vec3(0, 0, 0);
 
-        while (!ok) {
-            int x = rand() % GRIDLENGTH + GRIDMARGINS;
-            int z = rand() % GRIDLENGTH + GRIDMARGINS;
+            while (!ok) {
+                int x = rand() % GRIDLENGTH + GRIDMARGINS;
+                int z = rand() % GRIDLENGTH + GRIDMARGINS;
 
-            if ((x < GRIDLENGTH - GRIDMARGINS) && (z < GRIDLENGTH - GRIDMARGINS)
-                && (!usedX[x] || !usedZ[z])) {
+                if ((x < GRIDLENGTH - GRIDMARGINS) && (z < GRIDLENGTH - GRIDMARGINS)
+                    && (!usedX[x] || !usedZ[z])) {
 
-                float y = ground->calculateHeight((float)x, (float)z);
-                position = glm::vec3(x, y, z);
+                    float y = ground->calculateHeight((float)x, (float)z);
+                    position = glm::vec3(x, y, z);
 
-                packet->setPosition(position);
-                packet->setStartPosition(position);
-                packet->setScale(float(rand() % 5) / 10 + 1.0f);
+                    packet->setPosition(position);
+                    packet->setStartPosition(position);
+                    packet->setScale(float(rand() % 5) / 10 + 1.0f);
 
-                ok = true;
-                usedX[x] = true;
-                usedZ[z] = true;
+                    ok = true;
+                    usedX[x] = true;
+                    usedZ[z] = true;
+                }
             }
         }
-    }
 
-    CreateMesh("packet", packet->getVertices(), packet->getIndices());
+        CreateMesh("packet", packet->getVertices(), packet->getIndices());
+    }
 
     //  Delivery area
-    delivery = new Delivery(startResolution.x, startResolution.y);
-    //  Generate a position
     {
-        bool ok = false;
-        glm::vec3 position = glm::vec3(0, 0, 0);
+        delivery = new Delivery(startResolution.x, startResolution.y);
+        //  Generate a position
+        {
+            bool ok = false;
+            glm::vec3 position = glm::vec3(0, 0, 0);
 
-        while (!ok) {
-            int x = rand() % GRIDLENGTH + GRIDMARGINS;
-            int z = rand() % GRIDLENGTH + GRIDMARGINS;
+            while (!ok) {
+                int x = rand() % GRIDLENGTH + GRIDMARGINS;
+                int z = rand() % GRIDLENGTH + GRIDMARGINS;
 
-            if ((x < GRIDLENGTH - GRIDMARGINS) && (z < GRIDLENGTH - GRIDMARGINS)
-                && (!usedX[x] || !usedZ[z])) {
+                if ((x < GRIDLENGTH - GRIDMARGINS) && (z < GRIDLENGTH - GRIDMARGINS)
+                    && (!usedX[x] || !usedZ[z])) {
 
-                float y = ground->calculateHeight((float)x, (float)z) + 0.5f;
-                position = glm::vec3(x, y, z);
+                    float y = ground->calculateHeight((float)x, (float)z) + 0.5f;
+                    position = glm::vec3(x, y, z);
 
-                delivery->setPosition(position);
+                    delivery->setPosition(position);
 
-                ok = true;
-                usedX[x] = true;
-                usedZ[z] = true;
+                    ok = true;
+                    usedX[x] = true;
+                    usedZ[z] = true;
+                }
             }
         }
+
+        CreateMesh("delivery", delivery->getVertices(), delivery->getIndices());
     }
 
-    CreateMesh("delivery", delivery->getVertices(), delivery->getIndices());
-
     //  Guide arrow
-    arrow = new Arrow(startResolution.x, startResolution.y, glm::vec3(0, 0, 0));
-    CreateMesh("arrow", arrow->getVertices(), arrow->getIndices());
+    {
+        arrow = new Arrow(startResolution.x, startResolution.y, glm::vec3(0, 0, 0));
+        CreateMesh("arrow", arrow->getVertices(), arrow->getIndices());
+    }
+
+    //  Text
+    {
+        textRenderer = new gfxc::TextRenderer(window->props.selfDir, startResolution.x, startResolution.y);
+        textRenderer->Load(PATH_JOIN(window->props.selfDir, RESOURCE_PATH::FONTS, "Hack-Bold.ttf"), 30);
+    }
 }
 
 void Tema2::FrameStart()
@@ -350,6 +378,11 @@ void Tema2::RenderScenePerspective(float deltaTimeSeconds) {
             glm::vec3 droneHitbox = glm::vec3(x, drone->getPosition().y, z);
 
             received = delivery->checkCollision(droneHitbox);
+
+            //  Increase score
+            if (received) {
+                deliveredPackets++;
+            }
         }
 
         //  Momentum animation
@@ -558,6 +591,8 @@ void Tema2::RenderScenePerspective(float deltaTimeSeconds) {
         modelMatrix *= RotateOY(glm::radians(arrow->getAngleOy()));
         RenderMesh(meshes["arrow"], shaders["VertexNormal"], modelMatrix);
     }
+
+    //  TEXT
 }
 
 void Tema2::RenderSceneOrtho() {
@@ -654,6 +689,9 @@ void Tema2::RenderSceneOrtho() {
 
 void Tema2::Update(float deltaTimeSeconds)
 {
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     glm::ivec2 resolution = window->GetResolution();
     glViewport(0, 0, resolution.x, resolution.y);
 
@@ -661,6 +699,34 @@ void Tema2::Update(float deltaTimeSeconds)
     projectionMatrix = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
     RenderScenePerspective(deltaTimeSeconds);
 
+    //  Draw text
+    const float kTopY = 10.f;
+    const float kRowHeight = 25.f;
+    int rowIndex = 0;
+    glm::vec3 kTextColor = glm::vec3(0.2f, 0.3f, 0.2f);
+
+    //  Game is running
+    if (stopwatch > 0.0) {
+        textRenderer->RenderText("Delivered: " + std::to_string(deliveredPackets), 5.0f, kTopY + kRowHeight * rowIndex++, 1.0f, kTextColor);
+        textRenderer->RenderText("Time left: " + std::to_string((int)stopwatch), 5.0f, kTopY + kRowHeight * rowIndex++, 1.0f, kTextColor);
+    }
+    //  Game over
+    else {
+        rowIndex = 10;
+        kTextColor = glm::vec3(0.8f, 0.2f, 0);
+        textRenderer->RenderText("GAME OVER", startResolution.x / 2.7, kTopY + kRowHeight * rowIndex, 2.0f, kTextColor);
+
+        rowIndex = 13;
+        textRenderer->RenderText("Final score: " + std::to_string(deliveredPackets), startResolution.x / 3.3, kTopY + kRowHeight * rowIndex++, 2.0f, kTextColor);
+    }
+
+    //  Add to stopwatch
+    stopwatch -= (double)deltaTimeSeconds;
+    if (stopwatch <= 0.0) {
+        stopwatch = 0.0;
+    }
+
+    //  Clear depth buffer for ortho view
     glClear(GL_DEPTH_BUFFER_BIT);
     glViewport(miniViewportArea.x, miniViewportArea.y, miniViewportArea.width, miniViewportArea.height);
 
@@ -692,155 +758,157 @@ void Tema2::RenderMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix)
 void Tema2::OnInputUpdate(float deltaTime, int mods)
 {
     
-    float cameraSpeedRotate = 250.0f;
+    if (stopwatch > 0.0) {
+        float cameraSpeedRotate = 250.0f;
 
-    //  THRUST
-    if (window->KeyHold(GLFW_KEY_W) && !collision) {
-        //  Mark key as pressed
-        if (!wHold) {
-            wHold = true;
+        //  THRUST
+        if (window->KeyHold(GLFW_KEY_W) && !collision) {
+            //  Mark key as pressed
+            if (!wHold) {
+                wHold = true;
+            }
+
+            //  Lose momentum
+            if (isSlidingBackward) {
+                cameraSpeedMove = 0.0f;
+            }
+            isSlidingForward = false;
+            isSlidingBackward = false;
+
+            //  Accelerate
+            cameraSpeedMove += deltaTime;
+            if (cameraSpeedMove > 0.7f) {
+                cameraSpeedMove = 0.7f;
+            }
+
+            //  Translate the camera upward
+            //  Take into account drone angles
+            float upward = (15.0f - abs(drone->getAngleOx())) * (15.0f - abs(drone->getAngleOz()))
+                * cameraSpeedMove * deltaTime;
+            upward /= 10.0f;
+            camera->TranslateUpward(upward);
+
+            float forward = drone->getAngleOx() * cameraSpeedMove * deltaTime;
+            camera->MoveForward(forward);
+
+            float right = drone->getAngleOz() * cameraSpeedMove * deltaTime;
+            camera->TranslateRight(right);
+        }
+        else if (wHold) {
+            isSlidingForward = true;
+            wHold = false;
         }
 
-        //  Lose momentum
-        if (isSlidingBackward) {
-            cameraSpeedMove = 0.0f;
+        if (window->KeyHold(GLFW_KEY_S) && !collision) {
+            //  Mark key as pressed
+            if (!sHold) {
+                sHold = true;
+            }
+
+            //  Lose momentum
+            if (isSlidingForward) {
+                cameraSpeedMove = 0.0f;
+            }
+            isSlidingForward = false;
+            isSlidingBackward = false;
+
+            //  Accelerate
+            cameraSpeedMove += deltaTime;
+            if (cameraSpeedMove > 0.7f) {
+                cameraSpeedMove = 0.7f;
+            }
+
+            //  Translate the camera downward
+            //  Translate the camera upward
+            //  Take into account drone angles
+            float upward = (15.0f - abs(drone->getAngleOx())) * (15.0f - abs(drone->getAngleOz()))
+                * cameraSpeedMove * deltaTime;
+            upward /= 10.0f;
+            camera->TranslateUpward(-upward);
+
+            float forward = drone->getAngleOx() * cameraSpeedMove * deltaTime;
+            camera->MoveForward(-forward);
+
+            float right = drone->getAngleOz() * cameraSpeedMove * deltaTime;
+            camera->TranslateRight(-right);
         }
-        isSlidingForward = false;
-        isSlidingBackward = false;
-
-        //  Accelerate
-        cameraSpeedMove += deltaTime;
-        if (cameraSpeedMove > 0.7f) {
-            cameraSpeedMove = 0.7f;
-        }
-
-        //  Translate the camera upward
-        //  Take into account drone angles
-        float upward = (15.0f - abs(drone->getAngleOx())) * (15.0f - abs(drone->getAngleOz()))
-            * cameraSpeedMove * deltaTime;
-        upward /= 10.0f;
-        camera->TranslateUpward(upward);
-
-        float forward = drone->getAngleOx() * cameraSpeedMove * deltaTime;
-        camera->MoveForward(forward);
-
-        float right = drone->getAngleOz() * cameraSpeedMove * deltaTime;
-        camera->TranslateRight(right);
-    }
-    else if (wHold) {
-        isSlidingForward = true;
-        wHold = false;
-    }
-
-    if (window->KeyHold(GLFW_KEY_S) && !collision) {
-        //  Mark key as pressed
-        if (!sHold) {
-            sHold = true;
-        }
-        
-        //  Lose momentum
-        if (isSlidingForward) {
-            cameraSpeedMove = 0.0f;
-        }
-        isSlidingForward = false;
-        isSlidingBackward = false;
-
-        //  Accelerate
-        cameraSpeedMove += deltaTime;
-        if (cameraSpeedMove > 0.7f) {
-            cameraSpeedMove = 0.7f;
+        else if (sHold) {
+            isSlidingBackward = true;
+            sHold = false;
         }
 
-        //  Translate the camera downward
-        //  Translate the camera upward
-        //  Take into account drone angles
-        float upward = (15.0f - abs(drone->getAngleOx())) * (15.0f - abs(drone->getAngleOz()))
-            * cameraSpeedMove * deltaTime;
-        upward /= 10.0f;
-        camera->TranslateUpward(-upward);
+        //  YAW
+        if (window->KeyHold(GLFW_KEY_A)) {
+            //  Rotate drone to the left
+            float angle = drone->getAngleOy() + cameraSpeedRotate * deltaTime;
+            float diff = angle - drone->getAngleOy();
 
-        float forward = drone->getAngleOx() * cameraSpeedMove * deltaTime;
-        camera->MoveForward(-forward);
+            if (angle > 360.0f) {
+                angle = angle - 360.0f;
+            }
 
-        float right = drone->getAngleOz() * cameraSpeedMove * deltaTime;
-        camera->TranslateRight(-right);
-    }
-    else if (sHold) {
-        isSlidingBackward = true;
-        sHold = false;
-    }
+            drone->setAngleOy(angle);
 
-    //  YAW
-    if (window->KeyHold(GLFW_KEY_A)) {
-        //  Rotate drone to the left
-        float angle = drone->getAngleOy() + cameraSpeedRotate * deltaTime;
-        float diff = angle - drone->getAngleOy();
-
-        if (angle > 360.0f) {
-            angle = angle - 360.0f;
+            //  Rotate the camera with it
+            camera->RotateThirdPerson_OY(glm::radians(diff));
         }
 
-        drone->setAngleOy(angle);
+        if (window->KeyHold(GLFW_KEY_D)) {
+            //  Rotate drone to the right
+            float angle = drone->getAngleOy() - cameraSpeedRotate * deltaTime;
+            float diff = angle - drone->getAngleOy();
 
-        //  Rotate the camera with it
-        camera->RotateThirdPerson_OY(glm::radians(diff));
-    }
+            if (angle < 0.0f) {
+                angle = 360.0f + angle;
+            }
 
-    if (window->KeyHold(GLFW_KEY_D)) {
-        //  Rotate drone to the right
-        float angle = drone->getAngleOy() - cameraSpeedRotate * deltaTime;
-        float diff = angle - drone->getAngleOy();
+            drone->setAngleOy(angle);
 
-        if (angle < 0.0f) {
-            angle = 360.0f + angle;
+            //  Rotate the camera with it
+            camera->RotateThirdPerson_OY(glm::radians(diff));
         }
 
-        drone->setAngleOy(angle);
+        //  PITCH
+        if (window->KeyHold(GLFW_KEY_UP)) {
+            float angle = drone->getAngleOx() + cameraSpeedRotate * deltaTime;
 
-        //  Rotate the camera with it
-        camera->RotateThirdPerson_OY(glm::radians(diff));
-    }
+            if (angle > 15.0f) {
+                angle = 15.0f;
+            }
 
-    //  PITCH
-    if (window->KeyHold(GLFW_KEY_UP)) {
-        float angle = drone->getAngleOx() + cameraSpeedRotate * deltaTime;
-
-        if (angle > 15.0f) {
-            angle = 15.0f;
+            drone->setAngleOx(angle);
         }
 
-        drone->setAngleOx(angle);
-    }
+        if (window->KeyHold(GLFW_KEY_DOWN)) {
+            float angle = drone->getAngleOx() - cameraSpeedRotate * deltaTime;
 
-    if (window->KeyHold(GLFW_KEY_DOWN)) {
-        float angle = drone->getAngleOx() - cameraSpeedRotate * deltaTime;
+            if (angle < -15.0f) {
+                angle = -15.0f;
+            }
 
-        if (angle < -15.0f) {
-            angle = -15.0f;
+            drone->setAngleOx(angle);
         }
 
-        drone->setAngleOx(angle);
-    }
+        //  ROLL
+        if (window->KeyHold(GLFW_KEY_RIGHT)) {
+            float angle = drone->getAngleOz() + cameraSpeedRotate * deltaTime;
 
-    //  ROLL
-    if (window->KeyHold(GLFW_KEY_RIGHT)) {
-        float angle = drone->getAngleOz() + cameraSpeedRotate * deltaTime;
+            if (angle > 15.0f) {
+                angle = 15.0f;
+            }
 
-        if (angle > 15.0f) {
-            angle = 15.0f;
+            drone->setAngleOz(angle);
         }
 
-        drone->setAngleOz(angle);
-    }
+        if (window->KeyHold(GLFW_KEY_LEFT)) {
+            float angle = drone->getAngleOz() - cameraSpeedRotate * deltaTime;
 
-    if (window->KeyHold(GLFW_KEY_LEFT)) {
-        float angle = drone->getAngleOz() - cameraSpeedRotate * deltaTime;
+            if (angle < -15.0f) {
+                angle = -15.0f;
+            }
 
-        if (angle < -15.0f) {
-            angle = -15.0f;
+            drone->setAngleOz(angle);
         }
-
-        drone->setAngleOz(angle);
     }
 }
 
