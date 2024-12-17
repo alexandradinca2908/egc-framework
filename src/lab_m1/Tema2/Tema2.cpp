@@ -623,7 +623,7 @@ void Tema2::RenderSceneOrtho() {
         //  Set matrix for mesh
         glm::mat4 modelMatrix = glm::mat4(1);
         modelMatrix *= Translate(drone->getPosition().x, drone->getPosition().y, drone->getPosition().z);
-        modelMatrix *= Scale(3.0f, 3.0f, 3.0f);
+        modelMatrix *= Scale(6.0f, 6.0f, 6.0f);
         modelMatrix *= RotateOY(glm::radians(-45.0f));
         modelMatrix *= RotateOY(glm::radians(drone->getAngleOy()));
         modelMatrix *= RotateOZ(glm::radians(drone->getAngleOz()));

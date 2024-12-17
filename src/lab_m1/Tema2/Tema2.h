@@ -59,7 +59,7 @@ namespace m1
         //  Constants
         static const int TREES = 55;
         static const int GRIDLENGTH = 99;
-        static const int GRIDMARGINS = 4;
+        static const int GRIDMARGINS = 6;
         const double TIMELEFT = 100.0;
 
         //  Game objects
