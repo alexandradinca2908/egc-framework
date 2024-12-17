@@ -106,12 +106,12 @@ void Tema2::Init()
 
     //  Camera object
     {
-        camera = new Camera();
-        camera->Set(glm::vec3(0, 2, 3.5f), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
-        camera->RotateThirdPerson_OY(glm::radians(220.0f));
-        camera->TranslateForward(6.0f);
-        camera->TranslateRight(-2.0f);
-        camera->TranslateUpward(3.0f);
+        cameraMain = new Camera();
+        cameraMain->Set(glm::vec3(0, 2, 3.5f), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
+        cameraMain->RotateThirdPerson_OY(glm::radians(220.0f));
+        cameraMain->TranslateForward(6.0f);
+        cameraMain->TranslateRight(-2.0f);
+        cameraMain->TranslateUpward(3.0f);
 
         //  Perspective camera
         fov = RADIANS(60);
@@ -119,17 +119,20 @@ void Tema2::Init()
         nearPlane = 0.01f;
         farPlane = 200.0f;
 
+        //  Projection matrix
+        projectionMatrix = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
+
+        cameraMini = new Camera();
+        cameraMini->Set(glm::vec3(GRIDLENGTH / 2.0f, 25.0f, GRIDLENGTH / 2.0f), glm::vec3(GRIDLENGTH / 2.0f, 0, GRIDLENGTH / 2.0f), glm::vec3(0, 0, -1));
+
         //  Ortho camera
-        left = -5.0f;
-        right = 5.0f;
-        bottom = -3.0f;
-        top = 3.0f;
+        left = -50.0f;
+        right = 50.0f;
+        bottom = -50.0f;
+        top = 50.0f;
         zNear = nearPlane;
         zFar = farPlane;
     }
-
-    //  Projection matrix
-    projectionMatrix = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
 
     //  Animation variables
     {
@@ -168,7 +171,7 @@ void Tema2::Init()
 
     //  Drone
     {
-        drone = new Drone(startResolution.x, startResolution.y, camera->GetTargetPosition());
+        drone = new Drone(startResolution.x, startResolution.y, cameraMain->GetTargetPosition());
         CreateMesh("drone", drone->getVertices(), drone->getIndices());
     }
 
@@ -207,9 +210,9 @@ void Tema2::Init()
 
             trees[i] = new Tree(startResolution.x, startResolution.y, position);
             trees[i]->setScale(float(rand() % 5) / 10 + 1.0f);
-
-            CreateMesh("tree", trees[i]->getVertices(), trees[i]->getIndices());
         }
+        CreateMesh("tree", trees[0]->getVertices(), trees[0]->getIndices());
+        CreateMesh("tree2D", trees[0]->generateVertices2D(startResolution.x, startResolution.y), trees[0]->generateIndices2D());
     }
 
     //  Packet
@@ -242,6 +245,7 @@ void Tema2::Init()
         }
 
         CreateMesh("packet", packet->getVertices(), packet->getIndices());
+        CreateMesh("packet2D", packet->generateVertices2D(startResolution.x, startResolution.y), packet->generateIndices2D());
     }
 
     //  Delivery area
@@ -331,7 +335,7 @@ void Tema2::RenderScenePerspective(float deltaTimeSeconds) {
             collision = true;
         }
 
-        if (!collision && drone->getPosition().y > GRIDLENGTH) {
+        if (!collision && drone->getPosition().y > GRIDLENGTH / 4.0f) {
             collision = true;
         }
 
@@ -407,9 +411,9 @@ void Tema2::RenderScenePerspective(float deltaTimeSeconds) {
                 right *= -1;
             }
 
-            camera->TranslateUpward(upward);
-            camera->MoveForward(forward);
-            camera->TranslateRight(right);
+            cameraMain->TranslateUpward(upward);
+            cameraMain->MoveForward(forward);
+            cameraMain->TranslateRight(right);
         }
 
         if (cameraSpeedMove <= 0.0f) {
@@ -417,7 +421,7 @@ void Tema2::RenderScenePerspective(float deltaTimeSeconds) {
         }
 
         //  Update position
-        drone->setPosition(camera->GetTargetPosition());
+        drone->setPosition(cameraMain->GetTargetPosition());
 
         //  Set matrix for mesh
         glm::mat4 modelMatrix = glm::mat4(1);
@@ -604,14 +608,14 @@ void Tema2::RenderSceneOrtho() {
                 trees[i]->getPosition().z);
             modelMatrix *= Scale(trees[i]->getScale(), trees[i]->getScale(), trees[i]->getScale());
 
-            RenderMesh(meshes["tree"], shaders["VertexNormal"], modelMatrix);
+            RenderMeshMini(meshes["tree2D"], shaders["VertexNormal"], modelMatrix);
         }
     }
 
     //  GROUND
     {
         glm::mat4 modelMatrix = glm::mat4(1);
-        RenderMesh(meshes["ground"], shaders["GroundShader"], modelMatrix);
+        RenderMeshMini(meshes["ground"], shaders["GroundShader"], modelMatrix);
     }
 
     //  DRONE
@@ -619,12 +623,13 @@ void Tema2::RenderSceneOrtho() {
         //  Set matrix for mesh
         glm::mat4 modelMatrix = glm::mat4(1);
         modelMatrix *= Translate(drone->getPosition().x, drone->getPosition().y, drone->getPosition().z);
+        modelMatrix *= Scale(3.0f, 3.0f, 3.0f);
         modelMatrix *= RotateOY(glm::radians(-45.0f));
         modelMatrix *= RotateOY(glm::radians(drone->getAngleOy()));
         modelMatrix *= RotateOZ(glm::radians(drone->getAngleOz()));
         modelMatrix *= RotateOX(glm::radians(drone->getAngleOx()));
         modelMatrix *= RotateOY(glm::radians(45.0f));
-        RenderMesh(meshes["drone"], shaders["VertexNormal"], modelMatrix);
+        RenderMeshMini(meshes["drone"], shaders["VertexNormal"], modelMatrix);
     }
 
     //  ROTORS
@@ -645,7 +650,7 @@ void Tema2::RenderSceneOrtho() {
             modelMatrix *= Translate(offset.x, offset.y, offset.z);
             modelMatrix *= RotateOY(glm::radians(rotors[i]->getAngleOy()));
 
-            RenderMesh(meshes["rotor"], shaders["VertexNormal"], modelMatrix);
+            RenderMeshMini(meshes["rotor"], shaders["VertexNormal"], modelMatrix);
         }
     }
 
@@ -656,8 +661,9 @@ void Tema2::RenderSceneOrtho() {
             glm::mat4 modelMatrix = glm::mat4(1);
             modelMatrix *= Translate(packet->getPosition().x, packet->getPosition().y, packet->getPosition().z);
             modelMatrix *= Scale(packet->getScale(), packet->getScale(), packet->getScale());
+            modelMatrix *= Scale(3.0f, 3.0f, 3.0f);
 
-            RenderMesh(meshes["packet"], shaders["VertexNormal"], modelMatrix);
+            RenderMeshMini(meshes["packet2D"], shaders["VertexNormal"], modelMatrix);
         }
         else {
             //  When picked up, packet follows drone movement
@@ -667,13 +673,14 @@ void Tema2::RenderSceneOrtho() {
             //  Set matrix for mesh
             glm::mat4 modelMatrix = glm::mat4(1);
             modelMatrix *= Translate(drone->getPosition().x, drone->getPosition().y - offset, drone->getPosition().z);
+            modelMatrix *= Scale(3.0f, 3.0f, 3.0f);
             modelMatrix *= RotateOY(glm::radians(drone->getAngleOy()));
             modelMatrix *= RotateOY(glm::radians(-45.0f));
             modelMatrix *= RotateOZ(glm::radians(drone->getAngleOz()));
             modelMatrix *= RotateOX(glm::radians(drone->getAngleOx()));
             modelMatrix *= RotateOY(glm::radians(45.0f));
             modelMatrix *= Translate(0, -offset, 0);
-            RenderMesh(meshes["packet"], shaders["VertexNormal"], modelMatrix);
+            RenderMeshMini(meshes["packet"], shaders["VertexNormal"], modelMatrix);
         }
     }
 
@@ -683,7 +690,7 @@ void Tema2::RenderSceneOrtho() {
         modelMatrix *= Translate(delivery->getPosition().x, delivery->getPosition().y,
             delivery->getPosition().z);
 
-        RenderMesh(meshes["delivery"], shaders["DeliveryShader"], modelMatrix);
+        RenderMeshMini(meshes["delivery"], shaders["DeliveryShader"], modelMatrix);
     }
 }
 
@@ -737,7 +744,7 @@ void Tema2::Update(float deltaTimeSeconds)
 
 void Tema2::FrameEnd()
 {
-    DrawCoordinateSystem(camera->GetViewMatrix(), projectionMatrix);
+    //DrawCoordinateSystem(cameraMain->GetViewMatrix(), projectionMatrix);
 }
 
 
@@ -748,7 +755,21 @@ void Tema2::RenderMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix)
 
     // Render an object using the specified shader and the specified position
     shader->Use();
-    glUniformMatrix4fv(shader->loc_view_matrix, 1, GL_FALSE, glm::value_ptr(camera->GetViewMatrix()));
+    glUniformMatrix4fv(shader->loc_view_matrix, 1, GL_FALSE, glm::value_ptr(cameraMain->GetViewMatrix()));
+    glUniformMatrix4fv(shader->loc_projection_matrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
+    glUniformMatrix4fv(shader->loc_model_matrix, 1, GL_FALSE, glm::value_ptr(modelMatrix));
+
+    mesh->Render();
+}
+
+void Tema2::RenderMeshMini(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix)
+{
+    if (!mesh || !shader || !shader->program)
+        return;
+
+    // Render an object using the specified shader and the specified position
+    shader->Use();
+    glUniformMatrix4fv(shader->loc_view_matrix, 1, GL_FALSE, glm::value_ptr(cameraMini->GetViewMatrix()));
     glUniformMatrix4fv(shader->loc_projection_matrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
     glUniformMatrix4fv(shader->loc_model_matrix, 1, GL_FALSE, glm::value_ptr(modelMatrix));
 
@@ -786,13 +807,13 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
             float upward = (15.0f - abs(drone->getAngleOx())) * (15.0f - abs(drone->getAngleOz()))
                 * cameraSpeedMove * deltaTime;
             upward /= 10.0f;
-            camera->TranslateUpward(upward);
+            cameraMain->TranslateUpward(upward);
 
             float forward = drone->getAngleOx() * cameraSpeedMove * deltaTime;
-            camera->MoveForward(forward);
+            cameraMain->MoveForward(forward);
 
             float right = drone->getAngleOz() * cameraSpeedMove * deltaTime;
-            camera->TranslateRight(right);
+            cameraMain->TranslateRight(right);
         }
         else if (wHold) {
             isSlidingForward = true;
@@ -824,13 +845,13 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
             float upward = (15.0f - abs(drone->getAngleOx())) * (15.0f - abs(drone->getAngleOz()))
                 * cameraSpeedMove * deltaTime;
             upward /= 10.0f;
-            camera->TranslateUpward(-upward);
+            cameraMain->TranslateUpward(-upward);
 
             float forward = drone->getAngleOx() * cameraSpeedMove * deltaTime;
-            camera->MoveForward(-forward);
+            cameraMain->MoveForward(-forward);
 
             float right = drone->getAngleOz() * cameraSpeedMove * deltaTime;
-            camera->TranslateRight(-right);
+            cameraMain->TranslateRight(-right);
         }
         else if (sHold) {
             isSlidingBackward = true;
@@ -850,7 +871,7 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
             drone->setAngleOy(angle);
 
             //  Rotate the camera with it
-            camera->RotateThirdPerson_OY(glm::radians(diff));
+            cameraMain->RotateThirdPerson_OY(glm::radians(diff));
         }
 
         if (window->KeyHold(GLFW_KEY_D)) {
@@ -865,7 +886,7 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
             drone->setAngleOy(angle);
 
             //  Rotate the camera with it
-            camera->RotateThirdPerson_OY(glm::radians(diff));
+            cameraMain->RotateThirdPerson_OY(glm::radians(diff));
         }
 
         //  PITCH

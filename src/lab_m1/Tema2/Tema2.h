@@ -42,6 +42,7 @@ namespace m1
 
         void CreateMesh(const char* name, const std::vector<VertexFormat>& vertices, const std::vector<unsigned int>& indices);
         void RenderMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix) override;
+        void RenderMeshMini(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix);
         void RenderScenePerspective(float deltaTimeSeconds);
         void RenderSceneOrtho();
 
@@ -62,7 +63,8 @@ namespace m1
         const double TIMELEFT = 100.0;
 
         //  Game objects
-        Camera* camera;
+        Camera* cameraMain;
+        Camera* cameraMini;
         Ground* ground;
         Drone* drone;
         Rotor* rotors[4];
@@ -75,7 +77,7 @@ namespace m1
         gfxc::TextRenderer* textRenderer;
         glm::ivec2 startResolution;
         
-        //  Perspective caera
+        //  Perspective camera
         glm::mat4 projectionMatrix;
         float fov;
         float aspectRatio;
